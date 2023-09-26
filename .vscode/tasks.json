@@ -1,0 +1,17 @@
+{
+    "tasks": [
+        {
+            "label": "launch gdb-server",
+            "type": "shell",
+            "command": "make -f GNUMakefile run-gdb-server",
+            "isBackground": true,
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": [
+                "$gcc"
+            ]
+        }
+    ]
+}

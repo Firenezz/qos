@@ -1,0 +1,27 @@
+# Toolchain for building the 'limine' executable for the host.
+override DEFAULT_HOST_CC := cc
+$(eval $(call DEFAULT_VAR,HOST_CC,$(DEFAULT_HOST_CC)))
+override DEFAULT_HOST_CFLAGS := -g -O2 -pipe
+$(eval $(call DEFAULT_VAR,HOST_CFLAGS,$(DEFAULT_HOST_CFLAGS)))
+override DEFAULT_HOST_CPPFLAGS :=
+$(eval $(call DEFAULT_VAR,HOST_CPPFLAGS,$(DEFAULT_HOST_CPPFLAGS)))
+override DEFAULT_HOST_LDFLAGS :=
+$(eval $(call DEFAULT_VAR,HOST_LDFLAGS,$(DEFAULT_HOST_LDFLAGS)))
+override DEFAULT_HOST_LIBS :=
+$(eval $(call DEFAULT_VAR,HOST_LIBS,$(DEFAULT_HOST_LIBS)))
+
+override SENTINEL := .sentinel
+
+limine: $(BUILD_LIMINE)$(SENTINEL)
+	$(MAKE) -C $(BUILD_LIMINE) \
+		CC="$(HOST_CC)" \
+		CFLAGS="$(HOST_CFLAGS)" \
+		CPPFLAGS="$(HOST_CPPFLAGS)" \
+		LDFLAGS="$(HOST_LDFLAGS)" \
+		LIBS="$(HOST_LIBS)"
+
+$(BUILD_LIMINE)$(SENTINEL): $(BUILD_LIMINE)
+	touch $(BUILD_LIMINE)$(SENTINEL)
+
+$(BUILD_LIMINE):
+	git clone https://github.com/limine-bootloader/limine.git --branch=v5.x-branch-binary --depth=1 $(BUILD_LIMINE)

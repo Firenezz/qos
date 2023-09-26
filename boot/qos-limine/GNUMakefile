@@ -1,0 +1,32 @@
+# Nuke built-in rules and variables.
+override MAKEFLAGS += -rR
+
+ifeq ($(RUST_PROFILE),)
+    override RUST_PROFILE := dev
+endif
+
+override RUST_PROFILE_SUBDIR := $(RUST_PROFILE)
+ifeq ($(RUST_PROFILE),dev)
+    override RUST_PROFILE_SUBDIR := debug
+endif
+
+ifeq ($(KERNEL_TARGET),)
+	override KERNEL_TARGET := riscv64gc-unknown-none-elf
+endif
+
+# Default target.
+.PHONY: all
+all:
+	cargo build --target $(KERNEL_TARGET) --profile $(RUST_PROFILE) -Zbuild-std=core,alloc -Zbuild-std-features=compiler-builtins-mem
+	cp $(TARGET_DIR)/$(KERNEL_TARGET)/$(RUST_PROFILE_SUBDIR)/qos-limine $(ROOT_DIR)/$(BUILD_DIR)/qos.elf
+
+.PHONY: clippy
+clippy:
+	cargo clippy --target $(KERNEL_TARGET) --profile $(RUST_PROFILE) -Zbuild-std=core,alloc -Zbuild-std-features=compiler-builtins-mem
+
+# Remove object files and the final executable.
+.PHONY: clean
+clean:
+
+.PHONY: distclean
+distclean: clean

@@ -1,0 +1,9 @@
+[workspace]
+members = [
+    "qos-kernel",
+    "boot/*"
+]
+resolver = "2"
+
+[workspace.dependencies]
+qos-kernel = { path = "qos-kernel"}
