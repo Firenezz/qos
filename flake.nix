@@ -2,21 +2,24 @@
   description = "Flake for my custom os QOS";
 
   inputs = {
-    naersk.url = "github:nix-community/naersk/master";
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
-    utils.url = "github:numtide/flake-utils";
     flake-parts.url = "github:hercules-ci/flake-parts";
+    flake-parts.inputs.nixpkgs.follows = "nixpkgs";
 
-    nixpkgs-mozilla = {
-      url = "github:mozilla/nixpkgs-mozilla";
-      flake = false;
+    crane.url = "github:ipetkov/crane";
+    crane.inputs.nixpkgs.follows = "nixpkgs";
+
+    rust-overlay = {
+      url = "github:oxalica/rust-overlay";
+      inputs.nixpkgs.follows = "nixpkgs";
     };
+
     treefmt-nix.url = "github:numtide/treefmt-nix";
 
-    systems-default = { url = "path:./flake.systems.nix"; flake = false; }; # github:nix-systems/default + riscv
+    systems-default = { url = "path:flake.systems.nix"; flake = false; }; # github:nix-systems/default + riscv
   };
 
-  outputs = { self, fenix, nixpkgs, utils, naersk, flake-parts, systems-default, nixpkgs-mozilla, ... } @ inputs:
+  outputs = { self, nixpkgs, flake-parts, systems-default, ... } @ inputs:
     flake-parts.lib.mkFlake {inherit inputs;} {
       systems = import systems-default;
 
@@ -28,19 +31,32 @@
         pkgs,
         system,
         ...
-      }: let
-        riscv-toolchain-pkgs = import pkgs {
+      }:
+      let
+
+        local-pkgs = import nixpkgs {
+          localSystem = "${system}";
+          #overlays = [ (import inputs.rust-overlay) ];
+        };
+        riscv-pkgs = import nixpkgs {
           localSystem = "${system}";
           crossSystem = {
-            config = "riscv64-none-elf";
+            config = "riscv64-unknown-linux-gnu";
+            abi = "lp64";
           };
         };
 
-        OVMF = riscv-toolchain-pkgs.callPackage ./nix/OVMF/default.nix {};
+        rustToolchainFor = p: p.rust-bin.selectLatestNightlyWith (toolchain: toolchain.default.override {
+          extensions = [ "rust-src" ];
+          targets = [ "riscv64gc-unknown-none-elf" ];
+        });
+        rustToolchain = rustToolchainFor local-pkgs;
+
+        craneLib = (inputs.crane.mkLib local-pkgs).overrideToolchain rustToolchainFor;
 
         buildInputs = [
           pkgs.qemu
-          OVMF
+          pkgs.OVMFFull
         ];
 
         nativeBuildInputs = with pkgs; [
@@ -50,26 +66,24 @@
           cargo
           xorriso
           pexpect
-          riscv-toolchain-pkgs.buildPackages.gcc
+          riscv-pkgs.buildPackages.gcc
         ];
 
         debugBuildInputs = buildInputs ++ [
-          riscv-toolchain-pkgs.buildPackages.gdb
+          riscv-pkgs.buildPackages.gdb
         ];
 
-        devshell = import ./devshell.nix { inherit riscv-toolchain-pkgs nativeBuildInputs debugBuildInputs; };
-        #shell = import ./shell.nix { inherit buildInputs nativeBuildInputs ; };
+        qos-package = pkgs.callPackage ./nix/default.nix { inherit craneLib ;};
 
-        qos = pkgs.callPackage ./. { inherit riscv-toolchain-pkgs pkgs system naersk; };
+        #devshell = import ./devshell.nix { inherit riscv-pkgs local-pkgs qos-package; };
       in rec {
 
-        packages = {
-          default = qos.kernel;
-        };
+        qos = qos-package.qos;
+        #qos-checks = qos-package.checks;
 
-        _module.args.pkgs = import nixpkgs {
-            inherit system;
-          };
+        packages = {
+          default = qos;
+        };
 
         treefmt.config = {
           projectRootFile = "flake.nix";
@@ -77,13 +91,24 @@
             nixpkgs-fmt.enable = true;
           };
         };
+
+        checks = {
+          #inherit
+           # Build the crate as part of `nix flake check` for convenience
+           #qos
+           #qos-checks;
+        };
         
         devShells = {
-          #default = devshell;
+          default = pkgs.mkShell {
+            buildInputs = [
+              riscv-pkgs.buildPackages.gcc
+            ];
+          };
 
           gcc = pkgs.mkShell {
             buildInputs = [
-              riscv-toolchain-pkgs.buildPackages.gcc
+              riscv-pkgs.buildPackages.gcc
             ];
           };
         };
