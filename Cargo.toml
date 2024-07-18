@@ -4,7 +4,17 @@ members = [
     "boot/*",
     "riscv-rs"
 ]
+default-members = ["qos-kernel"]
 resolver = "2"
 
 [workspace.dependencies]
 qos-kernel = { path = "qos-kernel"}
+
+[workspace.package]
+version = "1.2.3"
+authors = ["Nice Folks"]
+description = "A short description of my package"
+documentation = "https://example.com/bar"
+
+[workspace.metadata.crane]
+name = "qos"

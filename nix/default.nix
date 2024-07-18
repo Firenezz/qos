@@ -1,10 +1,9 @@
-{ craneLib }:
-let 
-  tomlInfo = craneLib.crateNameFromCargoToml { cargoToml = ./Cargo.toml; }; 
+{ craneLib, pkgs, advisory-db }:
+let  
   src = craneLib.cleanCargoSource ./.;
   
   commonArgs = {
-    inherit (tomlInfo) pname version;
+    inherit (craneLib.crateNameFromCargoToml { inherit src; }) pname version;
     inherit src;
 
     doCheck = true;
@@ -17,20 +16,30 @@ let
 
     nativeBuildInputs = with pkgs; [
       xorriso
-      pexpect
+      #pexpect
     ];
   };
 in rec {
   cargoArtifacts = craneLib.buildDepsOnly commonArgs;
 
   checks = {
-    qos-clippy = craneLib.cargoClippy {
+    qos-workspace-clippy = craneLib.cargoClippy {
       inherit cargoArtifacts src;
-      cargoClippyExtraArgs = "-- --deny warnings";
+      cargoClippyExtraArgs = "--verbose --all-targets -- --deny warnings";
+    };
+
+    # Check formatting
+    qos-workspace-fmt = craneLib.cargoFmt {
+      inherit src;
+    };
+
+    # Audit dependencies
+    qos-workspace-audit = craneLib.cargoAudit {
+      inherit src advisory-db;
     };
   };
 
   qos = craneLib.buildPackage (commonArgs // {
     inherit cargoArtifacts;
-  })
+  });
 }

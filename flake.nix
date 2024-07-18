@@ -2,6 +2,7 @@
   description = "Flake for my custom os QOS";
 
   inputs = {
+    demel-nixpkgs.url = "github:Firenezz/nixpkgs";
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     flake-parts.url = "github:hercules-ci/flake-parts";
     flake-parts.inputs.nixpkgs.follows = "nixpkgs";
@@ -17,32 +18,35 @@
     treefmt-nix.url = "github:numtide/treefmt-nix";
 
     systems-default = { url = "path:flake.systems.nix"; flake = false; }; # github:nix-systems/default + riscv
+    advisory-db = {
+      url = "github:rustsec/advisory-db";
+      flake = false;
+    };
   };
 
-  outputs = { self, nixpkgs, flake-parts, systems-default, ... } @ inputs:
-    flake-parts.lib.mkFlake {inherit inputs;} {
-      systems = import systems-default;
+  outputs = { self, demel-nixpkgs, nixpkgs, flake-parts, systems-default, advisory-db, ... } @ inputs:
 
+    flake-parts.lib.mkFlake {inherit inputs;} {
       imports = [
         inputs.treefmt-nix.flakeModule
       ];
+      systems = import systems-default;
 
       perSystem = {
-        pkgs,
         system,
         ...
       }:
       let
 
-        local-pkgs = import nixpkgs {
+        pkgs = import nixpkgs {
           localSystem = "${system}";
-          #overlays = [ (import inputs.rust-overlay) ];
         };
-        riscv-pkgs = import nixpkgs {
-          localSystem = "${system}";
+
+        riscv-pkgs = import demel-nixpkgs {
+          system = "${system}";
           crossSystem = {
-            config = "riscv64-unknown-linux-gnu";
-            abi = "lp64";
+            config = "riscv64-linux";
+            #abi = "lp64";
           };
         };
 
@@ -50,35 +54,16 @@
           extensions = [ "rust-src" ];
           targets = [ "riscv64gc-unknown-none-elf" ];
         });
-        rustToolchain = rustToolchainFor local-pkgs;
+        rustToolchain = rustToolchainFor pkgs;
 
-        craneLib = (inputs.crane.mkLib local-pkgs).overrideToolchain rustToolchainFor;
+        craneLib = (inputs.crane.mkLib pkgs).overrideToolchain rustToolchainFor;
 
-        buildInputs = [
-          pkgs.qemu
-          pkgs.OVMFFull
-        ];
+        qos-package = pkgs.callPackage ./nix/default.nix { inherit craneLib pkgs advisory-db ;};
+        qos = qos-package.qos;
 
-        nativeBuildInputs = with pkgs; [
-          rust-analyzer # LSP Server
-          rustfmt       # Formatter
-          clippy        # Linter
-          cargo
-          xorriso
-          pexpect
-          riscv-pkgs.buildPackages.gcc
-        ];
-
-        debugBuildInputs = buildInputs ++ [
-          riscv-pkgs.buildPackages.gdb
-        ];
-
-        qos-package = pkgs.callPackage ./nix/default.nix { inherit craneLib ;};
-
-        #devshell = import ./devshell.nix { inherit riscv-pkgs local-pkgs qos-package; };
+        devshell = import ./nix/shell.nix { inherit riscv-pkgs pkgs qos-package; };
       in rec {
 
-        qos = qos-package.qos;
         #qos-checks = qos-package.checks;
 
         packages = {
