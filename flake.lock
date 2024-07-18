@@ -36,6 +36,21 @@
         "type": "github"
       }
     },
+    "demel-nixpkgs": {
+      "locked": {
+        "lastModified": 1721152346,
+        "narHash": "sha256-jDQWJkMaB32hOvfi1EB6fZ4r5j2THdhUaMjE4JDVGGE=",
+        "owner": "Firenezz",
+        "repo": "nixpkgs",
+        "rev": "47eb8ff53be2b7ed156352709c1bcd3bb70d9d91",
+        "type": "github"
+      },
+      "original": {
+        "owner": "Firenezz",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
     "flake-parts": {
       "inputs": {
         "nixpkgs-lib": "nixpkgs-lib"
@@ -102,6 +117,7 @@
       "inputs": {
         "advisory-db": "advisory-db",
         "crane": "crane",
+        "demel-nixpkgs": "demel-nixpkgs",
         "flake-parts": "flake-parts",
         "nixpkgs": "nixpkgs",
         "rust-overlay": "rust-overlay",
@@ -134,11 +150,11 @@
       "locked": {
         "lastModified": 1,
         "narHash": "sha256-3axxVjB0OPOEXjzhJqT/WXXY7RSXyQw7Dgg47g5Zz4Q=",
-        "path": "flake.systems.nix",
+        "path": "./flake.systems.nix",
         "type": "path"
       },
       "original": {
-        "path": "flake.systems.nix",
+        "path": "./flake.systems.nix",
         "type": "path"
       }
     },

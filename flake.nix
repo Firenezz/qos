@@ -17,7 +17,7 @@
 
     treefmt-nix.url = "github:numtide/treefmt-nix";
 
-    systems-default = { url = "path:flake.systems.nix"; flake = false; }; # github:nix-systems/default + riscv
+    systems-default = { url = "path:./flake.systems.nix"; flake = false; }; # github:nix-systems/default + riscv
     advisory-db = {
       url = "github:rustsec/advisory-db";
       flake = false;
@@ -50,21 +50,22 @@
           };
         };
 
-        rustToolchainFor = p: p.rust-bin.selectLatestNightlyWith (toolchain: toolchain.default.override {
+        /*rustToolchainFor = p: p.rust-bin.selectLatestNightlyWith (toolchain: toolchain.default.override {
           extensions = [ "rust-src" ];
           targets = [ "riscv64gc-unknown-none-elf" ];
         });
-        rustToolchain = rustToolchainFor pkgs;
+        rustToolchain = rustToolchainFor pkgs;*/
 
-        craneLib = (inputs.crane.mkLib pkgs).overrideToolchain rustToolchainFor;
+        craneLib = (inputs.crane.mkLib pkgs);#.overrideToolchain rustToolchainFor;
 
         qos-package = pkgs.callPackage ./nix/default.nix { inherit craneLib pkgs advisory-db ;};
         qos = qos-package.qos;
+        qos-workspace-clippy = qos-package.checks.qos-workspace-clippy;
+        qos-workspace-fmt = qos-package.checks.qos-workspace-fmt;
+        qos-workspace-audit = qos-package.checks.qos-workspace-audit;
 
         devshell = import ./nix/shell.nix { inherit riscv-pkgs pkgs qos-package; };
       in rec {
-
-        #qos-checks = qos-package.checks;
 
         packages = {
           default = qos;
@@ -78,24 +79,16 @@
         };
 
         checks = {
-          #inherit
+          inherit
            # Build the crate as part of `nix flake check` for convenience
-           #qos
-           #qos-checks;
+          qos
+          qos-workspace-clippy
+          qos-workspace-fmt
+          qos-workspace-audit;
         };
         
         devShells = {
-          default = pkgs.mkShell {
-            buildInputs = [
-              riscv-pkgs.buildPackages.gcc
-            ];
-          };
-
-          gcc = pkgs.mkShell {
-            buildInputs = [
-              riscv-pkgs.buildPackages.gcc
-            ];
-          };
+          default = devshell;
         };
       };
     };
