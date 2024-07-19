@@ -43,5 +43,7 @@ in rec {
     inherit cargoArtifacts;
 
     CARGO_BUILD_TARGET = "riscv64gc-unknown-none-elf";
+
+    cargoExtraArgs = "--target riscv64gc-unknown-none-elf";
   });
 }
