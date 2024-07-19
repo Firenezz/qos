@@ -1,5 +1,3 @@
-
-
 use core::arch::asm;
 use core::sync::atomic::{compiler_fence, Ordering};
 
@@ -8,4 +6,3 @@ use core::sync::atomic::{compiler_fence, Ordering};
 pub fn are_enabled() -> bool {
     false
 }
-

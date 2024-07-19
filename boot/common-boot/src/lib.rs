@@ -1,25 +1,22 @@
-#![feature(prelude_2024)]
 #![no_std]
 
-use limine::{SMPInfo, KernelAddress, MemoryMap};
+use limine::{KernelAddress, MemoryMap, SMPInfo};
 
 pub mod limine;
+//pub mod common;
 
-pub enum BootInfo {
-    Limine(LimineBootInfo),
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub enum BootLoader {
+    Limine,
+    Unknown,
 }
 
 #[repr(C)]
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
-pub struct LimineBootInfo {
+#[derive(Default, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub struct BootInfo {
+    pub loader: Option<BootLoader>,
     pub smp_info: Option<SMPInfo>,
     pub kernel_address: Option<KernelAddress>,
     pub memory_map: Option<MemoryMap>,
     //pub efi_info: Option<limine::EFIInfo>,
-}
-
-impl BootInfo {
-    pub fn new_from_limine(boot_info: LimineBootInfo) -> Self {
-        BootInfo::Limine(boot_info)
-    }
 }

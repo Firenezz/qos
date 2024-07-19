@@ -8,7 +8,7 @@ edition = "2021"
 [dependencies]
 common-boot = { path = "../boot/common-boot" }
 riscv-rs = { path = "../riscv-rs" }
-uefi = "0.24"
+uefi = "0.29.0"
 
 [features]
 default = ["hcf"]

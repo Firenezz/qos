@@ -1,9 +1,9 @@
-use crate::{read_csr_as, write_csr_usize, read_csr, write_csr};
+use crate::{read_csr, read_csr_as, write_csr, write_csr_usize};
 
 use super::general::fp::read;
 
 pub struct SATP {
-    value: usize
+    value: usize,
 }
 
 impl SATP {

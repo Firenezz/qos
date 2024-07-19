@@ -6,7 +6,7 @@
 use core::{arch::asm, cell::UnsafeCell};
 
 use common_boot::BootInfo;
-use uefi::table::{SystemTable, Runtime};
+use uefi::table::{Runtime, SystemTable};
 
 static SYSTEM_TABLE: RacyCell<Option<SystemTable<Runtime>>> = RacyCell::new(None);
 
@@ -28,23 +28,23 @@ impl<T> core::ops::Deref for RacyCell<T> {
     }
 }
 
-pub extern fn kernel_main(boot_info: BootInfo) -> ! {
-
+pub extern "C" fn kernel_main(boot_info: BootInfo) -> ! {
     riscv_rs::test_asm();
 
     hcf()
 }
 
-#[cfg(not(test))]
+//#[cfg(not(test))]
 use core::panic::PanicInfo;
 
 #[allow(dead_code)]
 #[inline(never)]
 /// Halt and Catch Fire
-/// 
+///
 /// This function will disable interrupts and then wait for an interrupt to occur.
 /// Effectively, stopping the cpu from doing anything else.
-pub fn hcf() -> ! { // Halt and Catch Fire
+pub fn hcf() -> ! {
+    // Halt and Catch Fire
     unsafe {
         #[cfg(feature = "hcf")]
         asm!("csrci mstatus, 8"); // Disable interrupts
@@ -54,7 +54,7 @@ pub fn hcf() -> ! { // Halt and Catch Fire
     }
 }
 
-#[cfg(not(test))]
+//#[cfg(not(test))]
 #[panic_handler]
 pub fn panic(_info: &PanicInfo) -> ! {
     hcf()

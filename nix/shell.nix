@@ -3,7 +3,7 @@
 pkgs.mkShell {
   inputsFrom = [ qos-package.qos ];
   nativeBuildInputs = [
-    rust-analyzer # LSP Server
+    pkgs.rust-analyzer # LSP Server
   ];
 
   packages = [

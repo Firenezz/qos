@@ -2,7 +2,6 @@ use crate::*;
 
 use super::Action;
 
-
 #[derive(Debug, Clone, Copy)]
 pub struct SSTATUS {
     value: usize,
@@ -19,9 +18,9 @@ bitflags::bitflags! {
         // bit 0: WPRI (write preserved and read ignored)
 
         /// Supervisor Interrupt Enable
-        /// 
+        ///
         /// Is used to control whether interrupts are enabled when executing in S-mode.
-        /// 
+        ///
         /// When SIE is set, interrupts are enabled in supervisor mode.
         /// When SIE is clear, interrupts are disabled in supervisor mode.
         const SIE = 0b1 << 1;
@@ -49,7 +48,6 @@ bitflags::bitflags! {
         const SD = 0b1 << 63; // The SD field in sstatus
     }
 }
-
 
 impl SSTATUS {
     read_csr_as!(SSTATUS);
@@ -84,15 +82,14 @@ impl SSTATUS {
     }
 }
 
-
 /*bitflags! {
     impl SSTATUS: usize {
         // bit 0: WPRI (write preserved and read ignored)
 
         /// Supervisor Interrupt Enable
-        /// 
+        ///
         /// Is used to control whether interrupts are enabled when executing in S-mode.
-        /// 
+        ///
         /// When SIE is set, interrupts are enabled in supervisor mode.
         /// When SIE is clear, interrupts are disabled in supervisor mode.
         const SIE = 0b1 << 1;
@@ -139,7 +136,6 @@ impl SSTATUS {
         }
 
 
-        
+
     }
 }*/
-

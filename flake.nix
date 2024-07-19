@@ -40,6 +40,7 @@
 
         pkgs = import nixpkgs {
           localSystem = "${system}";
+          overlays = [ (import inputs.rust-overlay) ];
         };
 
         riscv-pkgs = import demel-nixpkgs {
@@ -50,13 +51,9 @@
           };
         };
 
-        /*rustToolchainFor = p: p.rust-bin.selectLatestNightlyWith (toolchain: toolchain.default.override {
-          extensions = [ "rust-src" ];
-          targets = [ "riscv64gc-unknown-none-elf" ];
-        });
-        rustToolchain = rustToolchainFor pkgs;*/
+        rustTarget = pkgs.rust-bin.fromRustupToolchainFile ./rust-toolchain.toml;
 
-        craneLib = (inputs.crane.mkLib pkgs);#.overrideToolchain rustToolchainFor;
+        craneLib = (inputs.crane.mkLib pkgs).overrideToolchain rustTarget;
 
         qos-package = pkgs.callPackage ./nix/default.nix { inherit craneLib pkgs advisory-db ;};
         qos = qos-package.qos;

@@ -1,10 +1,7 @@
-
-
-use core::prelude::rust_2024::derive;
-use core::fmt::Debug;
-use core::marker::Copy;
 use core::clone::*;
 use core::cmp::*;
+use core::fmt::Debug;
+use core::marker::Copy;
 
 #[repr(C)]
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -17,16 +14,16 @@ pub struct SMPInfo {
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct SMPInfoEntry {
     /// ID of the processor
-    /// 
+    ///
     /// ACPI Processor UID as specified by the MADT (always 0 on non-ACPI systems).
     pub processor_id: u64,
     /// HART ID of the processor
-    /// 
+    ///
     /// Hart ID of the processor as specified by the MADT or Device Tree.
     pub hartid: u64,
     _reserved: u64, // reserved
     /// Address of the goto_address function
-    /// 
+    ///
     /// An atomic write to this field causes the parked CPU to jump to the written address,
     /// on a 64KiB (or Stack Size Request size) stack. A pointer to the struct limine_smp_info structure of the CPU
     /// is passed in x10(a0).
@@ -79,6 +76,4 @@ pub struct MemoryMapEntry {
     pub memory_type: MemoryType,
 }
 
-pub struct EfiSystemTable {
-    
-}
+pub struct EfiSystemTable {}

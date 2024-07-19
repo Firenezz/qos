@@ -7,7 +7,7 @@ build = "build.rs"
 [dependencies]
 qos-kernel = { path = "../../qos-kernel" }
 common-boot = { path = "../common-boot" }
-limine = { path = "limine-rs", features = ["requests-section"]}
+#limine = { path = "./limine-rs" }
 
 [profile.dev]
 panic = "abort"

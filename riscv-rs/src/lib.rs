@@ -1,12 +1,11 @@
 #![no_std]
-#![feature(concat_idents)]
 
 use core::panic;
 
 use registers::general::*;
 
-pub mod registers;
 pub mod instructions;
+pub mod registers;
 
 // If on a target arch riscv then activate the riscv feature
 
