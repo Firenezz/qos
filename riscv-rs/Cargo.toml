@@ -2,6 +2,10 @@
 name = "riscv-rs"
 version = "0.1.0"
 edition = "2021"
+authors = ["Your Name <your.email@example.com>"]
+description = "A Rust library for RISC-V architecture support"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/yourusername/riscv-rs"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -9,3 +13,12 @@ edition = "2021"
 
 [dependencies]
 bitflags = "2.4.0"
+volatile = "0.4.8"
+
+[features]
+default = ["std"]
+std = []
+no_std = []
+
+[package.metadata.docs.rs]
+targets = ["riscv64gc-unknown-none-elf"]

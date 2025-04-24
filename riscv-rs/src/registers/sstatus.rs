@@ -1,145 +1,90 @@
-use crate::*;
+//! Supervisor Status Register (sstatus)
+//!
+//! The sstatus register is a CSR that contains information about the current state
+//! of the processor in supervisor mode.
 
-use super::Action;
+use bitflags::bitflags;
+use crate::registers::{CsrRegister, Register};
 
+// Supervisor Status Register number
+const SSTATUS_CSR: u16 = 0x100;
 
-#[derive(Debug, Clone, Copy)]
-pub struct SSTATUS {
-    value: usize,
-}
-
-#[derive(Debug, Clone, Copy)]
-pub enum SPP {
-    User = 0b0,
-    Supervisor = 0b1,
-}
-
-bitflags::bitflags! {
-    pub struct SSTATUSField : usize {
-        // bit 0: WPRI (write preserved and read ignored)
-
+bitflags! {
+    /// Supervisor Status Register flags
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub struct SstatusFlags: u64 {
         /// Supervisor Interrupt Enable
-        /// 
-        /// Is used to control whether interrupts are enabled when executing in S-mode.
-        /// 
-        /// When SIE is set, interrupts are enabled in supervisor mode.
-        /// When SIE is clear, interrupts are disabled in supervisor mode.
-        const SIE = 0b1 << 1;
-
-        // bit 2-4: WPRI
-
+        const SIE = 1 << 1;
         /// Supervisor Previous Interrupt Enable
-        ///
-        /// Is used to save the previous interrupt enable status when an interrupt is taken while executing in S-mode.
-        ///
-        /// When an interrupt is taken, the current value of SIE is saved in SPIE, and SIE is set to 0.
-        /// When returning from the interrupt, the value of SPIE is restored to SIE.
-        const SPIE = 0b1 << 5;
-
-        /// User Breakpoint Enable
-        ///
-        /// Is used to control whether user-level breakpoints are enabled when executing in S-mode.
-        ///
-        /// When UBE is set, user-level breakpoints are enabled in supervisor mode.
-        /// When UBE is clear, user-level breakpoints are disabled in supervisor mode
-        const UBE = 0b1 << 6; // The UBE field in sstatus
-
-        const SPP = 0b1 << 8; // The SPP field in sstatus
-
-        const SD = 0b1 << 63; // The SD field in sstatus
+        const SPIE = 1 << 5;
+        /// Supervisor Previous Privilege Mode
+        const SPP = 1 << 8;
+        /// User Memory Access
+        const SUM = 1 << 18;
+        /// Make eXecutable Readable
+        const MXR = 1 << 19;
+        /// Supervisor User Memory Access
+        const SXL = 1 << 34;
+        /// User Memory Access
+        const UXL = 1 << 32;
     }
 }
 
+define_csr!(Sstatus, SSTATUS_CSR, u64);
 
-impl SSTATUS {
-    read_csr_as!(SSTATUS);
-    write_csr!(SSTATUS);
-    set_clear!(SSTATUS);
-    set_clear_csr_usize!(SSTATUS, set_flags, clear_flags, SSTATUSField);
-
-    set_clear_csr!(SSTATUS, set_sie, clear_sie, 1 << 1);
-
-    #[inline]
-    pub fn sie(&self) -> bool {
-        self.value & (1 << 1) != 0
+impl Sstatus {
+    /// Enable supervisor interrupts
+    #[inline(always)]
+    pub fn enable_interrupts() {
+        Self::csr_set_bits(SstatusFlags::SIE.bits());
     }
-
-    #[inline]
-    pub fn spie(&self) -> bool {
-        self.value & (1 << 5) != 0
+    
+    /// Disable supervisor interrupts
+    #[inline(always)]
+    pub fn disable_interrupts() {
+        Self::csr_clear_bits(SstatusFlags::SIE.bits());
     }
-
-    #[inline]
-    pub fn ube(&self) -> bool {
-        self.value & (1 << 6) != 0
+    
+    /// Check if supervisor interrupts are enabled
+    #[inline(always)]
+    pub fn interrupts_enabled() -> bool {
+        (Self::read() & SstatusFlags::SIE.bits()) != 0
     }
-
-    #[inline]
-    pub fn spp(&self) -> SPP {
-        match self.value & (0b1 << 8) {
-            0b0 => SPP::User,
-            0b1 => SPP::Supervisor,
-            _ => unreachable!(),
-        }
+    
+    /// Set the previous privilege mode to user mode
+    #[inline(always)]
+    pub fn set_previous_user_mode() {
+        Self::csr_clear_bits(SstatusFlags::SPP.bits());
+    }
+    
+    /// Set the previous privilege mode to supervisor mode
+    #[inline(always)]
+    pub fn set_previous_supervisor_mode() {
+        Self::csr_set_bits(SstatusFlags::SPP.bits());
+    }
+    
+    /// Enable user memory access in supervisor mode
+    #[inline(always)]
+    pub fn enable_user_memory_access() {
+        Self::csr_set_bits(SstatusFlags::SUM.bits());
+    }
+    
+    /// Disable user memory access in supervisor mode
+    #[inline(always)]
+    pub fn disable_user_memory_access() {
+        Self::csr_clear_bits(SstatusFlags::SUM.bits());
+    }
+    
+    /// Enable make executable readable
+    #[inline(always)]
+    pub fn enable_mxr() {
+        Self::csr_set_bits(SstatusFlags::MXR.bits());
+    }
+    
+    /// Disable make executable readable
+    #[inline(always)]
+    pub fn disable_mxr() {
+        Self::csr_clear_bits(SstatusFlags::MXR.bits());
     }
 }
-
-
-/*bitflags! {
-    impl SSTATUS: usize {
-        // bit 0: WPRI (write preserved and read ignored)
-
-        /// Supervisor Interrupt Enable
-        /// 
-        /// Is used to control whether interrupts are enabled when executing in S-mode.
-        /// 
-        /// When SIE is set, interrupts are enabled in supervisor mode.
-        /// When SIE is clear, interrupts are disabled in supervisor mode.
-        const SIE = 0b1 << 1;
-
-        // bit 2-4: WPRI
-
-        /// Supervisor Previous Interrupt Enable
-        ///
-        /// Is used to save the previous interrupt enable status when an interrupt is taken while executing in S-mode.
-        ///
-        /// When an interrupt is taken, the current value of SIE is saved in SPIE, and SIE is set to 0.
-        /// When returning from the interrupt, the value of SPIE is restored to SIE.
-        const SPIE = 0b1 << 5;
-
-        /// User Breakpoint Enable
-        ///
-        /// Is used to control whether user-level breakpoints are enabled when executing in S-mode.
-        ///
-        /// When UBE is set, user-level breakpoints are enabled in supervisor mode.
-        /// When UBE is clear, user-level breakpoints are disabled in supervisor mode
-        const UBE = 0b1 << 6; // The UBE field in sstatus
-
-        const SPP = 0b11 << 11; // The SPP field in sstatus
-
-        const SD = 0b1 << 63; // The SD field in sstatus
-
-        use core::arch::asm;
-
-        #[inline]
-        pub fn read() -> usize  {
-            // TODO: use a macro to generate this
-            let value: usize;
-            unsafe {
-                asm!("csrrs {}, sstatus, zero", out(reg) self.0, options(nomem, nostack, preserves_flags));
-            }
-            value
-        }
-
-        #[inline]
-        pub fn write(value: usize) {
-            unsafe {
-                asm!("csrw sstatus, {}", in(reg) value, options(nomem, nostack, preserves_flags));
-            }
-        }
-
-
-        
-    }
-}*/
 

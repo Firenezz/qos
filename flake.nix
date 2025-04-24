@@ -10,13 +10,13 @@
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
+        crossPkgs = pkgs.pkgsCross.riscv64-embedded;
       in
       {
         packages = {
-          default = pkgs.OVMF.override {
+          default = crossPkgs.OVMF.override {
             secureBoot = false;
             tpmSupport = false;
-            targetArch = "riscv64";
           };
         };
 
@@ -26,8 +26,7 @@
             nasm
             python3
             acpica-tools
-            iasl
-            riscv64-embedded-gcc
+            crossPkgs.stdenv.cc
           ];
         };
       });
