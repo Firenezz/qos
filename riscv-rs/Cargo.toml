@@ -13,7 +13,8 @@ repository = "https://github.com/yourusername/riscv-rs"
 
 [dependencies]
 bitflags = "2.4.0"
-volatile = "0.4.8"
+volatile = "0.6.1"
+bondrewd = "0.1.0"
 
 [features]
 default = ["std"]

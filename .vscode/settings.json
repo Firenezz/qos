@@ -3,4 +3,5 @@
         "riscv64gc-unknown-none-elf",
     ],
     "rust-analyzer.cargo.target": "riscv64gc-unknown-none-elf",
+    "makefile.makefilePath": "GNUMakefile",
 }
