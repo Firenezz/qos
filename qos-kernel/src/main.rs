@@ -6,9 +6,9 @@
 use core::{arch::asm, cell::UnsafeCell};
 
 use common_boot::BootInfo;
-use uefi::table::{SystemTable, Runtime};
+//use uefi::table::{BootServices, RuntimeServices};
 
-static SYSTEM_TABLE: RacyCell<Option<SystemTable<Runtime>>> = RacyCell::new(None);
+//static SYSTEM_TABLE: RacyCell<Option<SystemTable<Runtime>>> = RacyCell::new(None);
 
 struct RacyCell<T>(UnsafeCell<T>);
 
@@ -29,8 +29,6 @@ impl<T> core::ops::Deref for RacyCell<T> {
 }
 
 pub extern fn kernel_main(boot_info: BootInfo) -> ! {
-
-    riscv_rs::test_asm();
 
     hcf()
 }

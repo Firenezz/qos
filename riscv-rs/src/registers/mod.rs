@@ -22,15 +22,6 @@ pub mod macros;
 /// - Configuring the thread pointer (`tp`)
 pub mod general;
 
-/// Actions that can be performed on register bits
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Action {
-    /// Set the specified bits
-    Set,
-    /// Clear the specified bits
-    Clear,
-}
-
 /// Trait for register operations with compile-time optimizations
 pub trait Register {
     /// The type of the register value

@@ -9,27 +9,18 @@
   outputs = { self, nixpkgs, flake-utils }:
     flake-utils.lib.eachDefaultSystem (system:
       let
-        platform = {
-          hostPlatform = system;
-          targetPlatform = "riscv64-linux";
-        };
         pkgs = nixpkgs.legacyPackages.${system};
-        riscv-toolchain-pkgs = import nixpkgs {            
-          localSystem = "${system}";
-          crossSystem = {
-            config = "riscv64-unknown-linux-gnu";
-          };
-        };
+        riscv-pkgs = pkgs.pkgsCross.riscv64-embedded;
       in rec
       {
         packages = {
           # RISC-V OVMF firmware for QEMU UEFI boot
-          ovmf = riscv-toolchain-pkgs.OVMF.override {
+          ovmf = riscv-pkgs.OVMF.override {
             secureBoot = false;
             tpmSupport = false;
           };
-          gdb = riscv-toolchain-pkgs.buildPackages.gdb;
-          gcc = riscv-toolchain-pkgs.buildPackages.gcc;
+          gdb = riscv-pkgs.buildPackages.gdb;
+          gcc = riscv-pkgs.buildPackages.gcc;
           default = self.packages.${system}.ovmf;
         };
 
@@ -39,6 +30,7 @@
               rustup
 
               # Build: Limine (host cc), kernel (cargo), ISO
+              just
               gnumake
               nasm
               acpica-tools
@@ -54,13 +46,14 @@
           };
           gdb-riscv = pkgs.mkShell {
             buildInputs = [
-              riscv-toolchain-pkgs.buildPackages.gcc
+              riscv-pkgs.buildPackages.gcc
             ];
             packages = with pkgs; [
-              riscv-toolchain-pkgs.buildPackages.gdb
+              riscv-pkgs.buildPackages.gdb
               rustup
 
               # Build: Limine (host cc), kernel (cargo), ISO
+              just
               gnumake
               nasm
               acpica-tools
@@ -74,15 +67,15 @@
               qemu
             ];
             nativeBuildInputs = [
-              riscv-toolchain-pkgs.OVMF
+              riscv-pkgs.OVMF
             ];
-            OVMF_PATH = riscv-toolchain-pkgs.OVMF.fd;
+            OVMF_PATH = riscv-pkgs.OVMF.fd;
           };
         };
         # Use rust-toolchain.toml via rustup (rustup default nightly, etc.)
         env = {
           #CARGO_BUILD_TARGET = "riscv64gc-unknown-none-elf";
-          OVMF_PATH = "${self.packages.${system}.ovmf}";
+          OVMF_PATH = "${riscv-pkgs.OVMF.fd}";
         };
       });
 }

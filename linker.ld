@@ -1,3 +1,6 @@
+ /* Tell the linker that we want a riscv64 ELF64 output file */
+OUTPUT_FORMAT(elf64-littleriscv)
+ 
  ENTRY(boot_main)
 
 /* Define the program headers we want so the bootloader gives us the right */
@@ -21,6 +24,7 @@ SECTIONS
 
     .text : {
         *(.text.boot)
+        *(.__init)
         . += CONSTANT(MAXPAGESIZE);
         *(.text .text.*)
     } :text
@@ -35,6 +39,14 @@ SECTIONS
 
     .data : {
         *(.data .data.*)
+
+        KEEP(*(.requests_start))
+        KEEP(*(.requests))
+        KEEP(*(.requests_end))
+
+        KEEP(*(SORT_BY_NAME(.__init_data.*)))
+
+        *(.sdata .sdata.*)
     } :data
 
     .dynamic : {
@@ -42,7 +54,9 @@ SECTIONS
     } :data :dynamic
 
     .bss : {
+        *(.sbss .sbss.*)
         *(.bss .bss.*)
+        *(COMMON)
     } :data
 
     /* Discard .note.* and .eh_frame since they may cause issues on some hosts. */

@@ -1,5 +1,4 @@
-#![cfg_attr(not(feature = "std"), no_std)]
-#![feature(concat_idents)]
+#![no_std]
 #![warn(missing_docs)]
 
 //! A Rust library for RISC-V architecture support
@@ -12,10 +11,10 @@ extern crate core as std;
 
 use core::panic;
 
-use registers::general::*;
+//use registers::general::*;
 
-pub mod registers;
-pub mod instructions;
+//pub mod registers;
+//pub mod instructions;
 
 // If on a target arch riscv then activate the riscv feature
 
@@ -24,11 +23,11 @@ pub mod instructions;
 /// This is a temporary test function that will be removed in future versions.
 #[doc(hidden)]
 pub fn test_asm() {
-    let _test = ra::read();
-    gp::write(0x1234);
-    fp::write(_test);
+    //let _test = ra::read();
+    //gp::write(0x1234);
+    //fp::write(_test);
 
     //let _test = unsafe { macros::_read() };
 
-    panic!("test");
+    //panic!("test");
 }

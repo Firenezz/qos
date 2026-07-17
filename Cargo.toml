@@ -1,8 +1,7 @@
 [workspace]
 members = [
     "qos-kernel",
-    "boot/*",
-    "riscv-rs"
+    #riscv-rs"
 ]
 resolver = "2"
 
