@@ -4,4 +4,5 @@ fn main() {
     println!("cargo:rustc-link-arg=-Tlinker.ld");
     // ..and to re-run if it changes.
     println!("cargo:rerun-if-changed=linker.ld");
+    println!("cargo:rustc-link-arg=-Map=output.map");
 }

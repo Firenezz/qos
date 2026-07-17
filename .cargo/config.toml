@@ -5,6 +5,3 @@ build-std-features = ["compiler-builtins-mem"]
 
 [target.riscv64gc-unknown-none-elf]
 linker = "rust-lld"
-rustflags = [
-    "-C", "link-arg=-Map=output.map"
-]

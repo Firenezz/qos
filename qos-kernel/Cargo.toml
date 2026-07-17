@@ -9,6 +9,7 @@ edition = "2024"
 common-boot = { path = "../boot/common-boot" }
 #riscv-rs = { path = "../riscv-rs", default-features = false }
 uefi = "0.39"
+limine = "0.6.5"
 
 [features]
 default = ["hcf"]
