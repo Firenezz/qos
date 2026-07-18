@@ -1,46 +1,62 @@
 {
-    // Use IntelliSense to learn about possible attributes.
-    // Hover to view descriptions of existing attributes.
-    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    // Requires nix develop .#gdb-riscv (riscv64-none-elf-gdb + OVMF_CODE/OVMF_VARS).
+    // preLaunchTask runs: just run-riscv64-gdb  (-S -gdb tcp::3333)
     "version": "0.2.0",
     "configurations": [
-        // gdb remote to localhost:3333 on qemu
         {
-            "name": "gdb remote to localhost:3333 on qemu",
-            "type": "gdb",
-            "request": "attach",
-            "remote": true,
-            "target": "localhost:3333",
-            "cwd": "${workspaceFolder}",
-            "executable": "${workspaceFolder}/target/build/qos.elf",
-            "gdbpath": "/usr/bin/gdb-multiarch",
-            "preLaunchTask": "launch gdb-server",
-            "autorun": [
-                "symbol-file ${workspaceFolder}/target/build/qos.elf"
-            ]
-        },
-        {
-            "name": "QEMU GDB",
+            "name": "QEMU GDB (cppdbg)",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/target/build/qos.elf",
+            "program": "${workspaceFolder}/build/qos-kernel.elf",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],
-            "externalConsole": true,
+            "externalConsole": false,
             "MIMode": "gdb",
-            "miDebuggerPath": "riscv64-unknown-elf-gdb",
+            "miDebuggerPath": "riscv64-none-elf-gdb",
             "miDebuggerArgs": "--interpreter=mi2",
             "miDebuggerServerAddress": "localhost:3333",
             "preLaunchTask": "launch gdb-server",
             "setupCommands": [
                 {
-                    "description": "Enable Rust pretty-printing",
+                    "description": "RISC-V architecture",
+                    "text": "set architecture riscv:rv64",
+                    "ignoreFailures": false
+                },
+                {
+                    "description": "Load side-band DWARF from strip-debug",
+                    "text": "symbol-file ${workspaceFolder}/build/qos-kernel.sym",
+                    "ignoreFailures": false
+                },
+                {
+                    "description": "Enable pretty-printing",
                     "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Break at kernel entry",
+                    "text": "break boot_main",
                     "ignoreFailures": true
                 }
             ]
+        },
+        // LLDB
+        {
+            "name": "QEMU LLDB (Native Debug)",
+            "type": "lldb",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/qos-kernel.elf",
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": "launch gdb-server",
+            "initCommands": [
+                "settings set target.default-arch riscv64",
+                "target symbols add ${workspaceFolder}/build/qos-kernel.sym"
+            ],
+            "processCreateCommands": [
+                "gdb-remote localhost:3333"
+            ]
         }
+        
     ]
 }

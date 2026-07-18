@@ -1,0 +1,26 @@
+[package]
+name = "qos-types"
+version = "0.1.0"
+edition = "2024"
+description = "Portable shared types for qos (memory, paging, …)"
+autotests = false
+
+[lib]
+# Bare-metal targets have no `test` crate; keep the lib harness off so
+# rust-analyzer / `cargo check --target riscv64gc-unknown-none-elf` stay clean.
+# Host tests: `cargo test -p qos-types --features std`
+test = false
+doctest = false
+bench = false
+
+[dependencies]
+
+[features]
+default = []
+# Empty gate for host-only integration tests (does not link `std`).
+std = []
+
+[[test]]
+name = "memory"
+path = "tests/memory.rs"
+required-features = ["std"]

@@ -1,0 +1,23 @@
+[package]
+name = "qos-kernel"
+version = "0.1.0"
+edition = "2024"
+
+[[bin]]
+name = "qos-kernel"
+path = "src/bin/main.rs"
+
+[dependencies]
+qos-types = { workspace = true }
+riscv-rs = { workspace = true }
+limine = { version = "0.6.5", optional = true }
+log = "0.4.33"
+uefi-raw = "0.15.1"
+uefi = { workspace = true }
+
+[features]
+default = ["hcf", "boot-limine"]
+hcf = []
+# Protocol adapters (enable one primary path per image for now).
+boot-limine = ["dep:limine", "dep:uefi"]
+# boot-uefi = ["dep:uefi"]  # later

@@ -1,33 +1,10 @@
 #![no_std]
 #![warn(missing_docs)]
 
-//! A Rust library for RISC-V architecture support
+//! RISC-V architecture support for qos (RV64gc).
 //!
-//! This crate provides safe abstractions for working with RISC-V architecture features,
-//! including register access and instruction encoding/decoding.
+//! This crate currently exposes typed supervisor-mode CSR access. Field-packing
+//! tests are host-only (`cargo test -p riscv-rs --features std`); CSR asm
+//! requires `target_arch = "riscv64"`.
 
-#[cfg(not(feature = "std"))]
-extern crate core as std;
-
-use core::panic;
-
-//use registers::general::*;
-
-//pub mod registers;
-//pub mod instructions;
-
-// If on a target arch riscv then activate the riscv feature
-
-/// Test function for assembly operations
-///
-/// This is a temporary test function that will be removed in future versions.
-#[doc(hidden)]
-pub fn test_asm() {
-    //let _test = ra::read();
-    //gp::write(0x1234);
-    //fp::write(_test);
-
-    //let _test = unsafe { macros::_read() };
-
-    //panic!("test");
-}
+pub mod csr;

@@ -1,0 +1,7 @@
+
+make := require("make")
+
+limine:
+    rm -rf arch/limine/limine
+    cd arch/limine && git clone https://github.com/limine-bootloader/limine.git --branch=v10.x-binary --depth=1
+    cd arch/limine/limine && {{make}}

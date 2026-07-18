@@ -4,4 +4,8 @@
     ],
     "rust-analyzer.cargo.target": "riscv64gc-unknown-none-elf",
     "makefile.makefilePath": "GNUMakefile",
+    "lldb.displayFormat": "auto",
+    "lldb.showDisassembly": "auto",
+    "lldb.dereferencePointers": true,
+    "lldb.consoleMode": "commands",
 }

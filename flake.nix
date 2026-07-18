@@ -11,71 +11,46 @@
       let
         pkgs = nixpkgs.legacyPackages.${system};
         riscv-pkgs = pkgs.pkgsCross.riscv64-embedded;
-      in rec
+        # QEMU ships prebuilt RISC-V EDK2. Cross-building pkgsCross...OVMF from
+        # nixos-unstable currently fails (edk2-202605), so do not depend on it.
+        ovmfCode = "${pkgs.qemu}/share/qemu/edk2-riscv-code.fd";
+        ovmfVars = "${pkgs.qemu}/share/qemu/edk2-riscv-vars.fd";
+        commonPackages = with pkgs; [
+          rustup
+          just
+          just-lsp
+          gnumake
+          nasm
+          acpica-tools
+          xorriso
+          mtools
+          dtc
+          qemu
+        ];
+      in
       {
         packages = {
-          # RISC-V OVMF firmware for QEMU UEFI boot
-          ovmf = riscv-pkgs.OVMF.override {
-            secureBoot = false;
-            tpmSupport = false;
-          };
           gdb = riscv-pkgs.buildPackages.gdb;
           gcc = riscv-pkgs.buildPackages.gcc;
-          default = self.packages.${system}.ovmf;
+          default = self.packages.${system}.gdb;
         };
 
         devShells = {
           default = pkgs.mkShell {
-            packages = with pkgs; [
-              rustup
-
-              # Build: Limine (host cc), kernel (cargo), ISO
-              just
-              gnumake
-              nasm
-              acpica-tools
-
-              # ISO / disk image
-              xorriso
-              mtools
-              dtc
-
-              # Run and debug (host GDB can debug RISC-V via QEMU gdbstub)
-              qemu
-            ];
+            packages = commonPackages;
+            OVMF_CODE = ovmfCode;
+            OVMF_VARS = ovmfVars;
           };
           gdb-riscv = pkgs.mkShell {
             buildInputs = [
               riscv-pkgs.buildPackages.gcc
             ];
-            packages = with pkgs; [
+            packages = commonPackages ++ [
               riscv-pkgs.buildPackages.gdb
-              rustup
-
-              # Build: Limine (host cc), kernel (cargo), ISO
-              just
-              gnumake
-              nasm
-              acpica-tools
-
-              # ISO / disk image
-              xorriso
-              mtools
-              dtc
-
-              # Run and debug (host GDB can debug RISC-V via QEMU gdbstub)
-              qemu
             ];
-            nativeBuildInputs = [
-              riscv-pkgs.OVMF
-            ];
-            OVMF_PATH = riscv-pkgs.OVMF.fd;
+            OVMF_CODE = ovmfCode;
+            OVMF_VARS = ovmfVars;
           };
-        };
-        # Use rust-toolchain.toml via rustup (rustup default nightly, etc.)
-        env = {
-          #CARGO_BUILD_TARGET = "riscv64gc-unknown-none-elf";
-          OVMF_PATH = "${riscv-pkgs.OVMF.fd}";
         };
       });
 }

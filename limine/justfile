@@ -1,6 +1,0 @@
-
-
-limine:
-    rm -rf limine/limine
-    cd limine && git clone https://github.com/limine-bootloader/limine.git --branch=v10.x-binary --depth=1
-    cd limine/limine && make

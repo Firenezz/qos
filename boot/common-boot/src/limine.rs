@@ -15,6 +15,8 @@ pub struct SMPInfo {
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
+// This is to allow the hart to be sent to a function when main hart did the initialization
+#[allow(unpredictable_function_pointer_comparisons)]
 pub struct SMPInfoEntry {
     /// ID of the processor
     /// 

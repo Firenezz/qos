@@ -4,6 +4,7 @@ use limine::{SMPInfo, KernelAddress, MemoryMap};
 
 pub mod limine;
 
+#[repr(C)]
 pub enum BootInfo {
     Limine(LimineBootInfo),
 }
