@@ -16,7 +16,7 @@ pub unsafe extern "C" fn boot_main() -> ! {
             "la gp, __global_pointer$",
             ".option pop",
             "tail {start}",
-            start = sym crate::boot::kernel_main,
+            start = sym crate::boot::limine::handoff,
             options(nomem, nostack, noreturn),
         );
     }

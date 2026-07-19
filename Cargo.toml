@@ -2,8 +2,7 @@
 members = [
     "crates/qos-types",
     "crates/arch/riscv-rs",
-    "crates/kernel/qos-kernel",
-    "crates/uefi",
+    "crates/kernel/qos-kernel"
 ]
 resolver = "2"
 
@@ -11,4 +10,5 @@ resolver = "2"
 qos-types = { path = "crates/qos-types" }
 qos-kernel = { path = "crates/kernel/qos-kernel" }
 riscv-rs = { path = "crates/arch/riscv-rs" }
-uefi = { path = "crates/uefi" }
+#uefi = { git = "https://codeberg.org/Demelary/uefi.git", branch = "master"}
+uefi = { path = "crates/external/uefi" }

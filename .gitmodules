@@ -1,3 +1,6 @@
 [submodule "boot/qos-limine/limine-rs"]
 	path = boot/qos-limine/limine-rs
 	url = https://github.com/Firenezz/limine-rs.git
+[submodule "crates/external/uefi"]
+	path = crates/external/uefi
+	url = ssh://git@codeberg.org/Demelary/uefi.git

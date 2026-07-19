@@ -31,7 +31,18 @@ pub trait Arch: Sized {
     /// Called once on the BSP with interrupt state undefined.
     unsafe fn early_init() {}
 
-    fn init_logging() {}
+    fn init(info: &crate::boot::BootInfo);
+
+    fn init_logging();
+
+    /// Enable IRQs on this CPU.
+    fn irq_enable();
+
+    /// Disable IRQs on this CPU.
+    fn irq_disable();
+
+    /// Whether IRQs are enabled on this CPU.
+    fn irq_is_enabled() -> bool;
 
     #[inline(always)]
     fn cpu_id() -> <Self::Cpu as Cpu>::Id {
@@ -41,6 +52,13 @@ pub trait Arch: Sized {
     #[inline(always)]
     fn halt() -> ! {
         Self::Cpu::halt()
+    }
+
+    fn with_disabled_irqs<F: FnOnce() -> R, R>(f: F) -> R {
+        Self::irq_disable();
+        let result = f();
+        Self::irq_enable();
+        result
     }
 }
 

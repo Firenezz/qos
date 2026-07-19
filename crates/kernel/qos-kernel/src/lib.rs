@@ -6,11 +6,17 @@
 pub mod arch;
 pub mod boot;
 pub mod definitions;
+pub mod kernel;
 
 use crate::arch::Current;
 
 pub fn halt() -> ! {
     <<Current as arch::Arch>::Cpu as crate::arch::Cpu>::halt()
+}
+
+#[panic_handler]
+pub fn panic(_info: &core::panic::PanicInfo) -> ! {
+    halt()
 }
 
 pub fn test_runner(_tests: &[&dyn Fn()]) {

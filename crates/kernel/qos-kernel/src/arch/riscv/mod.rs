@@ -59,4 +59,30 @@ impl Arch for Riscv64 {
             );
         }
     }
+
+    fn init(_info: &crate::boot::BootInfo) {
+        // SAFETY: BSP bring-up; stack valid; IRQs still masked after this.
+        unsafe {
+            interrupt::init();
+        }
+    }
+
+    fn init_logging() {
+        unimplemented!()
+    }
+
+    #[inline(always)]
+    fn irq_enable() {
+        interrupt::enable();
+    }
+
+    #[inline(always)]
+    fn irq_disable() {
+        interrupt::disable();
+    }
+
+    #[inline(always)]
+    fn irq_is_enabled() -> bool {
+        interrupt::is_enabled()
+    }
 }

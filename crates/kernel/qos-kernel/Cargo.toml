@@ -19,5 +19,5 @@ uefi = { workspace = true }
 default = ["hcf", "boot-limine"]
 hcf = []
 # Protocol adapters (enable one primary path per image for now).
-boot-limine = ["dep:limine", "dep:uefi"]
+boot-limine = ["dep:limine"]
 # boot-uefi = ["dep:uefi"]  # later

@@ -87,7 +87,7 @@ fn gather_limine_boot_info() -> LimineBootInfo {
 pub fn handoff() -> ! {
     let limine_info = gather_limine_boot_info();
     match BootInfo::try_from(limine_info) {
-        Ok(info) => crate::boot::kernel_main(info),
+        Ok(info) => crate::kernel::kernel_main(info),
         Err(()) => crate::halt(),
     }
 }
