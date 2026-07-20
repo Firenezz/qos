@@ -1,7 +1,8 @@
 //! RISC-V supervisor trap / interrupt handling.
 //!
-//! Direct-mode `stvec` → asm stub. Trap stack bounds live in [`HartLocal`]
-//! (`tp`); `sscratch` mirrors the top for `csrrw` with `sp`.
+//! Direct-mode `stvec` → [`trap_entry`](`entry::trap_entry`) (`riscv-interrupt-s`).
+//! A dedicated trap stack is installed into [`HartLocal`] / `sscratch` for later
+//! nested-trap use; the interrupt ABI entry currently runs on the interrupted stack.
 //!
 //! [`HartLocal`]: crate::arch::riscv::device::cpu::HartLocal
 
@@ -26,29 +27,37 @@ use entry::trap_entry;
 /// # Safety
 ///
 /// Call once on the BSP (and later on each hart with its own `HartLocal`) before
-/// relying on traps. Nested traps spin in `trap_double_fault`.
+/// relying on traps.
 pub unsafe fn init() {
     // SAFETY: BSP only; sets `tp`, `sscratch`, and stack bounds.
+    log::info!("Initializing interrupt handling");
+    log::trace!("Installing trap stack");
     unsafe {
         stack::install();
     }
 
+    log::trace!("Setting up trap vector");
     let mut vec = stvec::Local::from_bits(0);
     vec.set_mode(StvecMode::Direct);
     vec.set_base(trap_entry as *const () as usize as u64);
     stvec::write(vec);
 
+    log::trace!("Masking supervisor interrupts");
     sie::write_raw(0);
     sstatus::clear(sstatus::Flags::SIE);
 }
 
 /// Enable supervisor interrupts (`sstatus.SIE = 1`).
+///
+/// Must not log: [`crate::console`] calls this via `with_disabled_irqs`.
 #[inline(always)]
 pub fn enable() {
     sstatus::set(sstatus::Flags::SIE);
 }
 
 /// Disable supervisor interrupts (`sstatus.SIE = 0`).
+///
+/// Must not log: [`crate::console`] calls this via `with_disabled_irqs`.
 #[inline(always)]
 pub fn disable() {
     sstatus::clear(sstatus::Flags::SIE);

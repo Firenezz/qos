@@ -1,11 +1,20 @@
 //! RISC-V 64-bit arch implementation + ELF/`EntryPointRequest` entry.
 
-use crate::arch::{Arch, Cpu};
+use core::num::NonZeroU64;
+
+use log::{Level, log};
+
+use crate::arch::device::uart::Uart;
+use crate::arch::{Arch, Processor};
 
 mod entry;
 
 pub mod device;
 pub mod interrupt;
+
+/// QEMU `riscv64-virt` UART0 MMIO base (`doc/qemu.dts`).
+/// for testing purposes
+const UART0_BASE: u64 = 0x1000_0000;
 
 /// RISC-V 64-bit (RV64) target.
 pub struct Riscv64;
@@ -13,22 +22,11 @@ pub struct Riscv64;
 /// BSP / application hart.
 pub struct Hart;
 
-impl Cpu for Hart {
-    type Id = u64;
-
-    #[inline(always)]
-    fn id() -> Self::Id {
-        // TODO: Limine hands off in S-mode (`mhartid` traps). Use SMP response /
-        // SBI / `tp` once those are wired; BSP id also arrives via `BootInfo`.
-        0
-    }
+impl Processor for Hart {
 
     #[inline(always)]
     fn wait_for_interrupt() {
-        // SAFETY: `wfi` is always valid to execute.
-        unsafe {
-            core::arch::asm!("wfi", options(nomem, nostack));
-        }
+        riscv_rs::operations::wfi();
     }
 
     fn halt() -> ! {
@@ -67,8 +65,15 @@ impl Arch for Riscv64 {
         }
     }
 
+    fn init_per_processor() {
+        todo!()
+    }
+
     fn init_logging() {
-        unimplemented!()
+        // SAFETY: compile-time non-zero MMIO base for QEMU virt.
+        let base = unsafe { NonZeroU64::new_unchecked(UART0_BASE) };
+        crate::console::init(Uart::new_ns16550(base));
+        log!(Level::Info, "Initialized logging");
     }
 
     #[inline(always)]

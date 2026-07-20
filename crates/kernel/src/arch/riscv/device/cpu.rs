@@ -5,6 +5,7 @@ pub mod off {
     pub const TRAP_STACK_TOP: usize = 0;
     pub const TRAP_STACK_BASE: usize = 8;
     pub const TRAP_DEPTH: usize = 16;
+    pub const HART_ID: usize = 24;
 }
 
 /// Hart-local kernel data. `tp` points here after [`crate::arch::riscv::interrupt::init`].
@@ -17,11 +18,14 @@ pub struct HartLocal {
     /// Nest depth (reserved; entry uses address-range checks for now).
     pub trap_depth: u8,
     pub _pad: [u8; 7],
+    /// Hardware hart id (Limine / DT / ACPI).
+    pub hart_id: u64,
 }
 
 const _: () = assert!(core::mem::offset_of!(HartLocal, trap_stack_top) == off::TRAP_STACK_TOP);
 const _: () = assert!(core::mem::offset_of!(HartLocal, trap_stack_base) == off::TRAP_STACK_BASE);
 const _: () = assert!(core::mem::offset_of!(HartLocal, trap_depth) == off::TRAP_DEPTH);
+const _: () = assert!(core::mem::offset_of!(HartLocal, hart_id) == off::HART_ID);
 
 impl HartLocal {
     pub const fn empty() -> Self {
@@ -30,6 +34,7 @@ impl HartLocal {
             trap_stack_base: 0,
             trap_depth: 0,
             _pad: [0; 7],
+            hart_id: 0,
         }
     }
 }

@@ -1,8 +1,8 @@
 //! Limine points [`EntryPointRequest`] at the shared [`crate::arch::riscv::boot_main`].
 
-use limine::request::EntryPointRequest;
+use limine::{mp::MpInfo, request::EntryPointRequest};
 
-use crate::arch::*;
+use crate::{arch::*, halt};
 
 /// Same entry as ELF `e_entry` — one GP setup, then [`crate::boot::early_start`].
 #[used]
@@ -18,5 +18,16 @@ extern "C" fn limine_entry() -> ! {
     unsafe {
         Current::early_init();
     }
+    // call pre-bootloader initialization for early logging and other setup
+    crate::kernel::pre_bootloader_init();
+    // Call the handoff function that will map the boot information and enter the kernel main function
     super::handoff();
+}
+
+pub extern "C" fn limine_ap_trampoline(info: &MpInfo) -> ! {
+    unsafe {
+        Current::early_init();
+    }
+
+    halt();
 }

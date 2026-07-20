@@ -1,5 +1,7 @@
 #![no_std]
 #![warn(missing_docs)]
+#![allow(unused_attributes)]
+#![allow(unused)]
 
 //! RISC-V architecture support for qos (RV64gc).
 //!
@@ -8,3 +10,5 @@
 //! requires `target_arch = "riscv64"`.
 
 pub mod csr;
+pub mod operations;
+pub mod ecall;

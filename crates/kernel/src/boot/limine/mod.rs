@@ -1,15 +1,17 @@
 //! Limine protocol adapter: requests + handoff → [`crate::boot::BootInfo`].
 
-use limine::request::{
+use limine::{mp::MpInfo, request::{
     DtbResponse, EfiResponse, ExecutableAddressResponse, FramebufferResponse, MemmapResponse,
     MpResponse, RsdpResponse,
-};
+}};
 
-use crate::boot::{Architecture, BootInfo, Capability};
+use crate::boot::{Architecture, BootInfo, BootLoader, Capability};
 
 mod entry;
 
 pub use entry::ENTRY_POINT_REQUEST;
+
+static mut CPU_MAP: Option<&[&MpInfo]> = None;
 
 pub(crate) mod limine_request {
     use limine::request::*;
@@ -86,8 +88,34 @@ fn gather_limine_boot_info() -> LimineBootInfo {
 /// Collect Limine responses and enter [`crate::boot::kernel_main`].
 pub fn handoff() -> ! {
     let limine_info = gather_limine_boot_info();
+
+    if let Some(smp) = limine_info.smp_response {
+        unsafe {
+            CPU_MAP = Some(smp.cpus());
+        }
+    }
     match BootInfo::try_from(limine_info) {
         Ok(info) => crate::kernel::kernel_main(info),
         Err(()) => crate::halt(),
+    }
+}
+
+pub struct LimineBootloader;
+
+impl BootLoader for LimineBootloader {
+    fn handoff(&self) -> ! {
+        todo!()
+    }
+
+    fn bootstrap(&self) -> Result<(), &'static str> {
+        match unsafe { CPU_MAP } {
+            Some(cpu_map) => {
+                for cpu in cpu_map {
+                    cpu.bootstrap(entry::limine_ap_trampoline, 0);
+                }
+            }
+            None => return Err("No CPU map found"),
+        }
+        Ok(())
     }
 }

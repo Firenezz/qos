@@ -11,9 +11,12 @@ path = "src/bin/main.rs"
 qos-types = { workspace = true }
 riscv-rs = { workspace = true }
 limine = { version = "0.6.5", optional = true }
-log = "0.4.33"
+log = { version = "0.4", features = ["release_max_level_info"] }
+spin = "0.12.2"
 uefi-raw = "0.15.1"
 uefi = { workspace = true }
+thin-vec = { version = "0.2.18", default-features = false }
+hashbrown = "0.17.1"
 
 [features]
 default = ["hcf", "boot-limine"]

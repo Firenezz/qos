@@ -126,7 +126,7 @@ build: _kernel-elf memory-map
 
 [private]
 _kernel-elf: build-folder
-    cargo build --target riscv64gc-unknown-none-elf -Zbuild-std
+    cargo build --target riscv64gc-unknown-none-elf -Zbuild-std=core,alloc -Zbuild-std-features=compiler-builtins-mem
     cp -v target/riscv64gc-unknown-none-elf/debug/{{kernel-name}} {{kernel-elf}}
 
 run:

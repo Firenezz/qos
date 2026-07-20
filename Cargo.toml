@@ -2,13 +2,13 @@
 members = [
     "crates/qos-types",
     "crates/arch/riscv-rs",
-    "crates/kernel/qos-kernel"
+    "crates/kernel/"
 ]
 resolver = "2"
 
 [workspace.dependencies]
 qos-types = { path = "crates/qos-types" }
-qos-kernel = { path = "crates/kernel/qos-kernel" }
+qos-kernel = { path = "crates/kernel/" }
 riscv-rs = { path = "crates/arch/riscv-rs" }
 #uefi = { git = "https://codeberg.org/Demelary/uefi.git", branch = "master"}
 uefi = { path = "crates/external/uefi" }

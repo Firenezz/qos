@@ -1,3 +1,8 @@
+pub mod memory;
+pub mod processor;
+pub mod alloc;
+pub mod cpu;
+
 use crate::arch::{Arch, Current};
 use crate::boot::{BootInfo, Capability};
 
@@ -6,11 +11,9 @@ use uefi::system;
 /// Bootloader-agnostic kernel entry after a protocol has produced [`BootInfo`].
 pub fn kernel_main(info: BootInfo) -> ! {
     // SAFETY: BSP only; interrupts undefined; paging still bootloader's.
-    Current::init(&info);
 
     match info.efi_system_table {
         Capability::Present(addr) => {
-            // SAFETY: Limine hands off a mapped EFI_SYSTEM_TABLE address.
             unsafe {
                 system::set_system_table(addr as *const system::SystemTable);
             }
@@ -22,10 +25,29 @@ pub fn kernel_main(info: BootInfo) -> ! {
         }
         Capability::Absent => {}
     }
-
+    log::info!("Initializing architecture specific state");
     Current::init(&info);
 
-    unsafe { core::ptr::read_volatile(1 as *const u8); }
+    log::info!("qos-kernel online");
+    log::info!("Kernel version: {}", env!("CARGO_PKG_VERSION"));
+
+
 
     crate::halt()
+}
+
+pub fn kernel_secondary_main(info: Option<BootInfo>) -> ! {
+    Current::init(&info.expect("Boot info is required for secondary processors"));
+
+    crate::halt()
+}
+
+/// Pre-bootloader initialization.
+/// This function is called before the bootloader mapping boot information.
+/// It looks for an early logging device and initializes the logging system.
+/// 
+/// # Safety
+/// It is safe to use any function that is available before the bootloader mapping boot information.
+pub fn pre_bootloader_init() {
+    Current::init_logging();
 }

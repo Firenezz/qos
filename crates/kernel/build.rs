@@ -7,7 +7,7 @@ fn main() {
     let manifest = PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").unwrap());
     let workspace = manifest
         .ancestors()
-        .nth(3)
+        .nth(2)
         .expect("qos-kernel should live at crates/kernel/qos-kernel");
 
     let linker_script = workspace.join("arch/linkers/linker.ld");

@@ -1,4 +1,7 @@
-//! Static BSP trap stack — range lives in [`HartLocal`] (`tp`), swap uses `sscratch`.
+//! Static BSP trap stack — range lives in [`HartLocal`] (`tp`); `sscratch` mirrors the top.
+//!
+//! Entry no longer swaps onto this stack (the `riscv-interrupt-s` ABI runs on the
+//! interrupted `sp`). Keep the install so nested-trap handling can reuse it later.
 
 use riscv_rs::csr::sscratch;
 
@@ -30,9 +33,6 @@ fn stack_top() -> usize {
 }
 
 /// Install the BSP trap stack into [`HartLocal`], set `tp`, and arm `sscratch`.
-///
-/// Stack top is stored in `HartLocal` (via `tp`); `sscratch` mirrors the top for
-/// the entry `csrrw` swap.
 ///
 /// # Safety
 ///

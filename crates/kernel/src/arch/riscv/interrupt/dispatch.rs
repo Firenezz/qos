@@ -47,6 +47,6 @@ pub(super) fn handle(frame: &mut TrapFrame) {
 
 fn unhandled(frame: &TrapFrame, kind: &str) {
     let _ = (frame, kind);
-    // No console yet — park the hart. `frame` retains sepc/scause/stval for debuggers.
+    // Park the hart; CSR fields in `frame` remain for debuggers.
     crate::halt();
 }
