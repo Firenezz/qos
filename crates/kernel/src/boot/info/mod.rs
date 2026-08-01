@@ -22,7 +22,7 @@ pub struct BootInfo {
     pub kernel_virt: Capability<u64>,
 
     /// Higher-half direct map offset (phys + offset → virt), if provided.
-    pub hhdm_offset: Capability<u64>,
+    pub hhdm_offset: Option<u64>,
 
     pub memory: Capability<MemoryMap>,
     pub cpus: Capability<CpuMap>,
@@ -43,7 +43,7 @@ impl BootInfo {
             bsp_hw_id: 0,
             kernel_phys: Capability::Absent,
             kernel_virt: Capability::Absent,
-            hhdm_offset: Capability::Absent,
+            hhdm_offset: None,
             memory: Capability::Absent,
             cpus: Capability::Absent,
             framebuffer: Capability::Absent,
@@ -138,6 +138,15 @@ pub struct CpuInfo {
 impl CpuInfo {
     pub const fn new(cpu_id: u32, hw_id: u64, acpi_uid: Capability<u32>, is_bsp: bool) -> Self {
         Self { cpu_id, hw_id, acpi_uid, is_bsp }
+    }
+}
+
+impl Into<crate::kernel::cpu::ProcessorInfo> for CpuInfo {
+    fn into(self) -> crate::kernel::cpu::ProcessorInfo {
+        crate::kernel::cpu::ProcessorInfo::new(self.cpu_id as usize, self.hw_id as usize, match self.acpi_uid {
+            Capability::Present(uid) => Some(uid as u64),
+            Capability::Absent => None,
+        })
     }
 }
 

@@ -3,7 +3,6 @@ name = "riscv-rs"
 version = "0.1.0"
 edition = "2024"
 description = "RISC-V architecture support (CSRs, RV64gc)"
-license = "MIT OR Apache-2.0"
 autotests = false
 
 [lib]

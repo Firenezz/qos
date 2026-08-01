@@ -4,17 +4,15 @@ use core::num::NonZeroU64;
 
 use log::{Level, log};
 
-use crate::arch::device::uart::Uart;
-use crate::arch::{Arch, Processor};
+use crate::arch::device::uart::{SbiLogger};
+use crate::arch::{Arch, Memory, Processor};
+use crate::console::Console;
 
 mod entry;
 
 pub mod device;
 pub mod interrupt;
-
-/// QEMU `riscv64-virt` UART0 MMIO base (`doc/qemu.dts`).
-/// for testing purposes
-const UART0_BASE: u64 = 0x1000_0000;
+pub mod memory;
 
 /// RISC-V 64-bit (RV64) target.
 pub struct Riscv64;
@@ -60,6 +58,9 @@ impl Arch for Riscv64 {
 
     fn init(_info: &crate::boot::BootInfo) {
         // SAFETY: BSP bring-up; stack valid; IRQs still masked after this.
+
+        Self::init_memory(_info);
+
         unsafe {
             interrupt::init();
         }
@@ -69,10 +70,8 @@ impl Arch for Riscv64 {
         todo!()
     }
 
-    fn init_logging() {
-        // SAFETY: compile-time non-zero MMIO base for QEMU virt.
-        let base = unsafe { NonZeroU64::new_unchecked(UART0_BASE) };
-        crate::console::init(Uart::new_ns16550(base));
+    fn init_logging(_uart_address: Option<NonZeroU64>) {
+        crate::console::init(Console::Sbi(SbiLogger::new()));
         log!(Level::Info, "Initialized logging");
     }
 

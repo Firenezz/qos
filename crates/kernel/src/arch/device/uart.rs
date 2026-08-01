@@ -22,6 +22,7 @@ const LSR_DR: u8 = 1 << 0;
 /// Platform UART backend. Extend when a non-16550 console appears.
 pub enum Uart {
     NS16550(NS16550),
+    Sbi(SbiLogger),
 }
 
 impl Uart {
@@ -33,23 +34,56 @@ impl Uart {
     pub fn init(&self) {
         match self {
             Self::NS16550(u) => u.init(),
+            Self::Sbi(_) => (),
         }
     }
 
     pub fn put_byte(&self, byte: u8) {
         match self {
             Self::NS16550(u) => u.put_byte(byte),
+            Self::Sbi(u) => u.put_byte(byte),
         }
     }
 
     pub fn write_str_raw(&self, s: &str) {
         match self {
             Self::NS16550(u) => u.write_str_raw(s),
+            Self::Sbi(u) => u.write_str_raw(s),
         }
     }
 }
 
 impl Write for Uart {
+    fn write_str(&mut self, s: &str) -> fmt::Result {
+        self.write_str_raw(s);
+        Ok(())
+    }
+}
+
+pub struct SbiLogger;
+
+impl SbiLogger {
+    pub fn new() -> Self {
+        Self
+    }
+
+    pub fn put_byte(&self, byte: u8) {
+        match sbi::debug_console::write_byte(byte) {
+            Ok(_) => (),
+            Err(_) => {
+                // TODO: Handle error
+            }
+        }
+    }
+
+    pub fn write_str_raw(&self, s: &str) {
+        for byte in s.bytes() {
+            self.put_byte(byte);
+        }
+    }
+}
+
+impl Write for SbiLogger {
     fn write_str(&mut self, s: &str) -> fmt::Result {
         self.write_str_raw(s);
         Ok(())

@@ -12,6 +12,7 @@ pub mod console;
 pub mod definitions;
 pub mod kernel;
 pub mod helpers;
+pub mod startup;
 
 use crate::arch::Current;
 
@@ -21,7 +22,8 @@ pub fn halt() -> ! {
 }
 
 #[panic_handler]
-pub fn panic(_info: &core::panic::PanicInfo) -> ! {
+pub fn panic(info: &core::panic::PanicInfo) -> ! {
+    log::error!("Panic: {}", info);
     halt()
 }
 

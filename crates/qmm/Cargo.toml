@@ -1,0 +1,36 @@
+[package]
+name = "qmm"
+version = "0.1.0"
+description = "QOS Memory Management"
+edition = "2024"
+autotests = false
+
+[lib]
+# Bare-metal targets have no `test` crate; keep the lib harness off so
+# rust-analyzer / `cargo check --target riscv64gc-unknown-none-elf` stay clean.
+# Host tests: `cargo test -p qmm --features std,host-tests --test arch`
+test = false
+doctest = false
+bench = false
+
+[dependencies]
+bitflags = "2"
+riscv-rs = { workspace = true }
+
+[package.metadata.rust-analyzer]
+# Workspace uses riscv64; skip host-only integration tests and bench targets.
+cargo.allTargets = false
+
+[features]
+std = []
+host-tests = []
+
+[[test]]
+name = "arch"
+path = "tests/arch.rs"
+required-features = ["std", "host-tests"]
+
+[[bin]]
+name = "rmm"
+path = "src/main.rs"
+required-features = ["std"]

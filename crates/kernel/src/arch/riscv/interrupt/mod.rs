@@ -20,6 +20,8 @@ use riscv_rs::csr::stvec::StvecMode;
 
 use entry::trap_entry;
 
+type TrapHandler = fn(frame: TrapFrame) -> !;
+
 /// Install `tp` → hart-local, trap stack, and the trap vector.
 ///
 /// Leaves supervisor IRQs masked (`sie = 0`, `sstatus.SIE = 0`).

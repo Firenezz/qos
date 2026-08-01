@@ -53,7 +53,7 @@ run-riscv64 *QEMU_ARGS: prepare-ovmf-vars iso-build
     qemu-system-riscv64 \
         -machine virt \
         -m 4G \
-        -cpu rv64 \
+        -cpu rv64,svpbmt=on \
         -smp 4 \
         -device {{QEMU_DEVICE_RAMFB}} \
         -device {{QEMU_DEVICE_GPU_PCI}} \
@@ -135,10 +135,11 @@ run:
 build-docs:
     cargo doc --target riscv64gc-unknown-none-elf --release
 
+# Remove cargo artifacts, build outputs, and generated maps/ISO files.
 clean:
-    cargo clean --target riscv64gc-unknown-none-elf
-    rm -f {{kernel-elf}} {{kernel-sym}} {{build-dir}}/{{kernel-name}}.iso
-    rm -rf {{maps-dir}}
+    cargo clean
+    rm -rf "{{build-dir}}"
+    rm -f qemu-new.dtb qemu-new.dts
 
 # Human-readable layout of the kernel ELF (sections + your crates only).
 # Full linker map (all deps): {{kernel-map}}

@@ -8,7 +8,7 @@ name = "qos-kernel"
 path = "src/bin/main.rs"
 
 [dependencies]
-qos-types = { workspace = true }
+qmm = { workspace = true }
 riscv-rs = { workspace = true }
 limine = { version = "0.6.5", optional = true }
 log = { version = "0.4", features = ["release_max_level_info"] }
@@ -17,6 +17,13 @@ uefi-raw = "0.15.1"
 uefi = { workspace = true }
 thin-vec = { version = "0.2.18", default-features = false }
 hashbrown = "0.17.1"
+
+# TODO: make this a riscv only dependency
+sbi = "0.3.0"
+linked_list_allocator = "0.10.6"
+smallvec = "1.15.2"
+
+
 
 [features]
 default = ["hcf", "boot-limine"]

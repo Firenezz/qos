@@ -12,3 +12,4 @@
 pub mod csr;
 pub mod operations;
 pub mod ecall;
+pub mod interrupt;

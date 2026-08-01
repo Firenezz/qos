@@ -18,9 +18,9 @@ SECTIONS
 {
     /* We wanna be placed in the topmost 2GiB of the address space, for optimisations */
     /* and because that is what the Limine spec mandates. */
-    /* Any address in this region will do, but often 0xffffffff80000000 is chosen as */
+    /* Any address in this region will do, but often 0xFFFFFFFF80000000 is chosen as */
     /* that is the beginning of the region. */
-    . = 0xffffffff80000000;
+    . = 0xFFFFFFFF80000000;
 
     .text : {
         *(.text.boot)
@@ -37,8 +37,9 @@ SECTIONS
 
     . += CONSTANT(MAXPAGESIZE);
 
-    .data : {
+    .data : ALIGN(4096) {
         *(.data .data.*)
+        *(.sdata .sdata.*)
 
         KEEP(*(.requests_start))
         KEEP(*(.requests))
@@ -47,23 +48,28 @@ SECTIONS
         KEEP(*(SORT_BY_NAME(.__init_data.*)))
 
         PROVIDE_HIDDEN(__global_pointer$ = . + 0x800);
-
-        *(.sdata .sdata.*)
     } :data
 
-    .dynamic : {
+    .dynamic : ALIGN(4096) {
         *(.dynamic)
     } :data :dynamic
 
-    .bss : {
+    .bss : ALIGN(4096) {
         *(.sbss .sbss.*)
         *(.bss .bss.*)
         *(COMMON)
     } :data
 
+    . = ALIGN(4096);
+
+    __end = .;
+
     /* Discard .note.* and .eh_frame since they may cause issues on some hosts. */
     /DISCARD/ : {
-        *(.eh_frame)
-        *(.note .note.*)
+        *(.comment*)
+        *(.eh_frame*)
+        *(.gcc_except_table*)
+        *(.note*)
+        *(.rel.eh_frame*)
     }
 }

@@ -1,11 +1,17 @@
-
-
+use smallvec::SmallVec;
 
 
 /// Memory map as reported by the bootloader (often bootloader-reclaimable).
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub struct MemoryMap {
     pub regions: &'static [MemoryRegion],
+    pub runtime_regions: SmallVec<[MemoryRegion; 32]>,
+}
+
+impl MemoryMap {
+    pub fn new() -> Self {
+        Self { regions: &[], runtime_regions: SmallVec::new() }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

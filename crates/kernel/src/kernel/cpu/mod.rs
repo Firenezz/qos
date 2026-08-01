@@ -34,15 +34,21 @@ impl Default for ProcessorInfo {
 /// 
 /// It is used by the kernel to identify and manage the processors in the system.
 #[derive(Debug, Clone)]
-pub struct CpuMap {
+pub struct ProcessorMap {
     pub processors: ThinVec<Option<ProcessorInfo>>,
     hw_id_to_index: HashMap<u64, usize>,
     firmware_id_to_index: HashMap<u64, usize>,
 }
 
-impl CpuMap {
+impl ProcessorMap {
     pub fn new() -> Self {
         Self { processors: ThinVec::new(), hw_id_to_index: HashMap::new(), firmware_id_to_index: HashMap::new() }
+    }
+
+    pub fn add_into(&mut self, boot_info: impl Into<ProcessorInfo>) -> ProcessorInfo {
+        let processor = boot_info.into();
+        self.add_processor(processor);
+        processor
     }
 
     pub fn add_processor(&mut self, processor: ProcessorInfo) {
