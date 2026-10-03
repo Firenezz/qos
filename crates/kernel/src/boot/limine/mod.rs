@@ -8,8 +8,12 @@ use limine::{mp::MpInfo, request::{
 }};
 
 use crate::boot::{Architecture, BootInfo, BootLoader, Capability};
+use crate::startup;
+
+use self::memmap::LimineMemoryKind;
 
 mod entry;
+mod memmap;
 
 pub use entry::ENTRY_POINT_REQUEST;
 
@@ -65,6 +69,12 @@ impl TryFrom<LimineBootInfo> for BootInfo {
     type Error = ();
 
     fn try_from(limine_boot_info: LimineBootInfo) -> Result<BootInfo, Self::Error> {
+
+        if limine_boot_info.memmap_response.is_some() {
+            log::trace!("Initializing memory map from Limine");
+            startup::memory::init_from_boot(&limine_boot_info);
+        }
+
         #[cfg(target_arch = "riscv64")]
         return Ok(Self {
             architecture: Architecture::RiscV64,
@@ -119,20 +129,7 @@ fn gather_limine_boot_info() -> LimineBootInfo {
 }
 
 fn memmap_entry_kind(type_: u64) -> &'static str {
-    use limine::memmap;
-
-    match type_ {
-        memmap::MEMMAP_USABLE => "usable",
-        memmap::MEMMAP_RESERVED => "reserved",
-        memmap::MEMMAP_ACPI_RECLAIMABLE => "acpi-reclaimable",
-        memmap::MEMMAP_ACPI_NVS => "acpi-nvs",
-        memmap::MEMMAP_BAD_MEMORY => "bad-memory",
-        memmap::MEMMAP_BOOTLOADER_RECLAIMABLE => "bootloader-reclaimable",
-        memmap::MEMMAP_EXECUTABLE_AND_MODULES => "executable-and-modules",
-        memmap::MEMMAP_FRAMEBUFFER => "framebuffer",
-        memmap::MEMMAP_MAPPED_RESERVED => "reserved-mapped",
-        _ => "unknown",
-    }
+    LimineMemoryKind(type_).debug_name()
 }
 
 /// Log the Limine memory map for bring-up / debugging.

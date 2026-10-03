@@ -3,7 +3,7 @@
 //! Limine (or another boot protocol) converts into this via [`From`] / [`TryFrom`].
 //! Optional firmware services use [`Capability`].
 
-use crate::{boot::capabilities::Capability, kernel::memory::MemoryMap};
+use crate::boot::capabilities::Capability;
 
 /// Snapshot of what the bootloader handed the kernel.
 ///
@@ -24,7 +24,6 @@ pub struct BootInfo {
     /// Higher-half direct map offset (phys + offset → virt), if provided.
     pub hhdm_offset: Option<u64>,
 
-    pub memory: Capability<MemoryMap>,
     pub cpus: Capability<CpuMap>,
 
     pub framebuffer: Capability<FramebufferInfo>,
@@ -44,7 +43,6 @@ impl BootInfo {
             kernel_phys: Capability::Absent,
             kernel_virt: Capability::Absent,
             hhdm_offset: None,
-            memory: Capability::Absent,
             cpus: Capability::Absent,
             framebuffer: Capability::Absent,
             rsdp: Capability::Absent,
@@ -92,30 +90,6 @@ impl Architecture {
             Self::Unknown
         }
     }
-}
-
-pub struct BootInfoMemoryMap {
-    pub memory_map: &'static [BootInfoMemoryRegion],
-}
-
-impl BootInfoMemoryMap {
-    pub const fn empty() -> Self {
-        Self { memory_map: &[] }
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct BootInfoMemoryRegion {
-    pub base: u64,
-    pub size: u64,
-    pub kind: BootInfoMemoryRegionKind,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum BootInfoMemoryRegionKind {
-    Usable,
-    Reserved,
-    BadMemory,
 }
 
 /// CPU list as reported by the bootloader.

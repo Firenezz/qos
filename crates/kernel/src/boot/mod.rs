@@ -8,14 +8,14 @@
 
 pub mod capabilities;
 pub mod info;
+pub mod memory;
 
 #[cfg(feature = "boot-limine")]
 pub mod limine;
 
 pub use capabilities::Capability;
-pub use info::{
-    Architecture, BootInfo, CpuInfo, CpuMap, FramebufferInfo
-};
+pub use info::{Architecture, BootInfo, CpuInfo, CpuMap, FramebufferInfo};
+pub use memory::{BootMemoryKind, BootMemoryMap, BootMemoryRegion, ReclaimStage};
 
 pub trait BootLoader {
     fn handoff(&self) -> !;

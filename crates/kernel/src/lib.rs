@@ -24,7 +24,7 @@ pub fn halt() -> ! {
 #[panic_handler]
 pub fn panic(info: &core::panic::PanicInfo) -> ! {
     log::error!("Panic: {}", info);
-    halt()
+    <<Current as arch::Arch>::Cpu as crate::arch::Processor>::halt()
 }
 
 pub fn test_runner(_tests: &[&dyn Fn()]) {

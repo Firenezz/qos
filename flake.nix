@@ -26,6 +26,7 @@
           mtools
           dtc
           qemu
+          ripgrep
         ];
       in
       {

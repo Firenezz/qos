@@ -1,12 +1,14 @@
+use core::arch::asm;
+
 use qmm::{TableKind, arch::Arch, page::structures::table::PageTable};
 
-use crate::definitions::PhysicalAddress;
-use crate::definitions::VirtualAddress;
+use crate::definitions::{PhysicalAddress, PhysicalAddressRange, VirtualAddress};
+use crate::kernel::memory::MAX_SNAPSHOT_REGIONS;
 
 pub type PageTableEntry = qmm::page::structures::entry::PageTableEntry<CurrentRmmArch>;
 
 use crate::arch::{riscv::Riscv64, traits::Memory};
-use crate::kernel::memory::MemoryMap;
+use crate::startup;
 
 pub use qmm::arch::riscv64::Sv48Arch as CurrentRmmArch;
 
@@ -31,10 +33,35 @@ impl Memory for Riscv64 {
 
         kernel_page.debug_tree_special(|arg| log::info!("{}", arg));
 
-        let memory_map = MemoryMap::new();
+        startup::with_memory(|map| {
+            log::info!(
+                "Memory map: {} snapshot, {} ram, {} device (reclaim stage {:?})",
+                map.snapshot().len(),
+                map.ram().count(),
+                map.devices().count(),
+                map.reclaim_stage(),
+            );
 
-        
+            let mut io_ranges = [PhysicalAddressRange::EMPTY; MAX_SNAPSHOT_REGIONS];
+            let mut io_count = 0;
+            for region in map.io_mapped() {
+                if io_count >= MAX_SNAPSHOT_REGIONS {
+                    break;
+                }
+                io_ranges[io_count] = region.range;
+                io_count += 1;
+            }
 
+            log::info!("IO-mapped regions ({io_count}):");
+            map.debug_io_mapped(|arg| log::info!("  {}", arg));
+
+            if io_count > 0 {
+                log::info!("IO memory page-table dump:");
+                root_table.debug_tree_for_physical_ranges(&io_ranges[..io_count], |arg| {
+                    log::info!("{}", arg)
+                });
+            }
+        });
     }
 
     fn get_highest_table_level() -> usize {

@@ -47,6 +47,8 @@ pub fn kernel_main(info: BootInfo) -> ! {
         Capability::Absent => {}
     }
 
+    unsafe { riscv_rs::operations::flush_tlb();};
+
     log::info!("qos-kernel online");
     log::info!("Kernel version: {}", env!("CARGO_PKG_VERSION"));
 
