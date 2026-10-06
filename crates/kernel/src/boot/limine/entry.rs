@@ -2,7 +2,11 @@
 
 use limine::{mp::MpInfo, request::EntryPointRequest};
 
-use crate::{arch::*, halt, kernel::{kernel_main, kernel_secondary_main}};
+use crate::{
+    arch::*,
+    halt,
+    kernel::{kernel_main, kernel_secondary_main},
+};
 
 /// Same entry as ELF `e_entry` — one GP setup, then [`crate::boot::early_start`].
 #[used]
@@ -29,7 +33,10 @@ pub extern "C" fn limine_ap_trampoline(info: &MpInfo) -> ! {
     log::info!("AP trampoline reached by processor {}", info.hartid);
     #[cfg(target_arch = "x86_64")]
     log::info!("AP trampoline reached by processor {}", info.lapic_id);
-    log::info!("AP trampoline reached by acpi processor id {}", info.processor_id);
+    log::info!(
+        "AP trampoline reached by acpi processor id {}",
+        info.processor_id
+    );
 
     //kernel_secondary_main(info);
 

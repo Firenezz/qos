@@ -3,7 +3,7 @@
 use qmm::arch::riscv64::Sv48Arch;
 use qmm::arch::{Arch, EmulateArch};
 use qmm::page::structures::flags::PageFlags;
-use qmm::{is_canonical_virt, sign_extend_virt, VirtAddrNotValid, VirtualAddress};
+use qmm::{VirtAddrNotValid, VirtualAddress, is_canonical_virt, sign_extend_virt};
 
 const VA_BITS: u32 = 48;
 

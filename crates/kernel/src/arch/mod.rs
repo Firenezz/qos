@@ -3,8 +3,8 @@
 //! Boot reaches [`crate::boot::kernel_main`] with a [`crate::boot::BootInfo`].
 //! Arch code owns CPU identity, early bring-up, and halt — not bootloader parsing.
 
-pub mod riscv;
 pub mod device;
+pub mod riscv;
 pub mod traits;
 
 pub use traits::*;
@@ -31,4 +31,9 @@ pub fn with_disabled_irqs<F: FnOnce() -> R, R>(f: F) -> R {
 
 pub fn init_logging(uart_address: Option<core::num::NonZeroU64>) {
     Current::init_logging(uart_address);
+}
+
+/// Register devices with the platform.
+pub fn register_devices() {
+    Current::register_devices();
 }

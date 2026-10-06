@@ -19,11 +19,7 @@ pub fn set_hhdm_offset(offset: usize) {
 #[inline]
 pub fn try_hhdm_offset() -> Option<usize> {
     let offset = HHDM_OFFSET.load(Ordering::Acquire);
-    if offset == 0 {
-        None
-    } else {
-        Some(offset)
-    }
+    if offset == 0 { None } else { Some(offset) }
 }
 
 /// Returns the HHDM offset, or `default` if none was registered.

@@ -1,8 +1,12 @@
 use core::marker::PhantomData;
 
-use crate::{TableKind, allocator::FrameAllocator, arch::Arch, page::structures::{entry::PageTableEntry, table::PageTable}, structures::{PhysicalAddress, VirtualAddress}};
-
-
+use crate::{
+    TableKind,
+    allocator::FrameAllocator,
+    arch::Arch,
+    page::structures::{entry::PageTableEntry, table::PageTable},
+    structures::{PhysicalAddress, VirtualAddress},
+};
 
 pub struct PageMapper<A, F> {
     table_kind: TableKind,
@@ -13,7 +17,12 @@ pub struct PageMapper<A, F> {
 
 impl<A: Arch, F> PageMapper<A, F> {
     unsafe fn new(table_kind: TableKind, table_address: PhysicalAddress, allocator: F) -> Self {
-        Self { table_kind, table_address, allocator, phantom: PhantomData }
+        Self {
+            table_kind,
+            table_address,
+            allocator,
+            phantom: PhantomData,
+        }
     }
 
     pub unsafe fn current(table_kind: TableKind, allocator: F) -> Self {
@@ -28,7 +37,7 @@ impl<A: Arch, F> PageMapper<A, F> {
     pub fn table(&self) -> PageTable<A> {
         // SAFETY: The only way to initialize a PageMapper is via new(), and we assume it upholds
         // all necessary invariants for this to be safe.
-        unsafe { 
+        unsafe {
             PageTable::new(
                 VirtualAddress::new(0),
                 self.table_address,
@@ -47,7 +56,11 @@ impl<A: Arch, F> PageMapper<A, F> {
 
     // TODO: PageFlags
 
-    fn visit<T>(&self, virtual_address: VirtualAddress, visitor: impl FnOnce(PageTable<A>, usize) -> T) -> Option<T> {
+    fn visit<T>(
+        &self,
+        virtual_address: VirtualAddress,
+        visitor: impl FnOnce(PageTable<A>, usize) -> T,
+    ) -> Option<T> {
         let mut table = self.table();
         loop {
             let i = table.index_of(virtual_address)?;
@@ -73,24 +86,26 @@ impl<A: Arch, F: FrameAllocator> PageMapper<A, F> {
         match (table_kind, A::KERNEL_SEPARATE_TABLE) {
             (TableKind::Kernel, false) => {
                 for i in A::PAGE_LEVELS / 2..A::PAGE_LEVELS {
-                    let phys = table
-                        .allocator
-                        .allocate_one()?;
+                    let phys = table.allocator.allocate_one()?;
                     let flags = A::ENTRY_FLAG_DEFAULT_TABLE;
-                    unsafe { table
-                        .table()
-                        .set_entry(i, PageTableEntry::new(phys.address(), flags))? };
+                    unsafe {
+                        table
+                            .table()
+                            .set_entry(i, PageTableEntry::new(phys.address(), flags))?
+                    };
                 }
             }
             (TableKind::User, false) => {
                 let active_kernel_table = unsafe { PageMapper::current(TableKind::Kernel, ()) };
-                unsafe { for i in A::PAGE_ENTRIES / 2..A::PAGE_ENTRIES {
-                    if let Some(entry) = active_kernel_table.table().entry(i) {
-                        table.table().set_entry(i, entry);
+                unsafe {
+                    for i in A::PAGE_ENTRIES / 2..A::PAGE_ENTRIES {
+                        if let Some(entry) = active_kernel_table.table().entry(i) {
+                            table.table().set_entry(i, entry);
+                        }
                     }
-                } };
+                };
             }
-            (_, true) => { }
+            (_, true) => {}
         }
 
         Some(table)

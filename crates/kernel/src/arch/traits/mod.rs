@@ -27,14 +27,14 @@ pub trait Arch: Sized {
     fn init(info: &crate::boot::BootInfo);
 
     /// Initialize the architecture specific state for each processor.
-    /// 
+    ///
     /// This function is called for each processor after the APs entered the kernel main function.
     fn init_per_processor();
 
     /// Initialize the logging system.
-    /// 
+    ///
     /// # Safety
-    /// 
+    ///
     /// Called once by the BSP only
     fn init_logging(uart_address: Option<NonZeroU64>);
 
@@ -61,11 +61,18 @@ pub trait Arch: Sized {
         }
         result
     }
+
+    /// Register devices with the platform.
+    ///
+    /// This should probe and register boot-time devices like timers
+    fn register_devices();
 }
 
 pub trait Memory {
     /// Initialize the memory system.
     fn init_memory(info: &crate::boot::BootInfo);
+
+    fn init_allocator();
 
     /// Get the highest table level.
     fn get_highest_table_level() -> usize;

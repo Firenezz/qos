@@ -4,6 +4,9 @@ use crate::boot::memory::ReclaimStage;
 use crate::definitions::PhysicalAddress;
 use crate::definitions::PhysicalAddressRange;
 
+pub mod frame;
+pub mod region;
+
 pub const MAX_SNAPSHOT_REGIONS: usize = 128;
 pub const MAX_ALLOCATABLE_REGIONS: usize = 64;
 
@@ -122,16 +125,15 @@ impl MemoryMap {
             return false;
         }
 
-        if self
-            .ram()
-            .any(|ram| region.range.overlaps(ram.range))
-        {
+        if self.ram().any(|ram| region.range.overlaps(ram.range)) {
             return false;
         }
 
-        if self.snapshot().iter().any(|entry| {
-            region.range.overlaps(entry.range) && entry.kind.is_special()
-        }) {
+        if self
+            .snapshot()
+            .iter()
+            .any(|entry| region.range.overlaps(entry.range) && entry.kind.is_special())
+        {
             return false;
         }
 
@@ -392,8 +394,12 @@ impl MemoryKind {
     pub const fn is_reserved(self) -> bool {
         matches!(
             self,
-            Self::Reserved | Self::BadMemory | Self::ReservedMapped | Self::Framebuffer
-                | Self::KernelAndModules | Self::AcpiNvs
+            Self::Reserved
+                | Self::BadMemory
+                | Self::ReservedMapped
+                | Self::Framebuffer
+                | Self::KernelAndModules
+                | Self::AcpiNvs
         )
     }
 

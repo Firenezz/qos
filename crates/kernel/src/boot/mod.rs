@@ -21,9 +21,9 @@ pub trait BootLoader {
     fn handoff(&self) -> !;
 
     /// Bootstrap the CPU.
-    /// 
+    ///
     /// This function request the bootloader specific context to start the processor with a thread pointer as extra argument.
-    /// 
-    /// the bootloader must then send the processor back to the kernel at 
+    ///
+    /// the bootloader must then send the processor back to the kernel at
     fn bootstrap(&self) -> Result<(), &'static str>;
 }

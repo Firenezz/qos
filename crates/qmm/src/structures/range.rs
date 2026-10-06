@@ -150,9 +150,7 @@ pub trait AddressRangeLen<A: Address> {
 
 impl<A: Address> AddressRangeLen<A> for Range<A> {
     fn len(&self) -> usize {
-        self.end
-            .as_usize()
-            .saturating_sub(self.start.as_usize())
+        self.end.as_usize().saturating_sub(self.start.as_usize())
     }
 }
 

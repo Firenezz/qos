@@ -71,9 +71,7 @@ impl BootMemoryMap for LimineBootInfo {
     type Region = LimineMemoryRegion;
 
     fn region_count(&self) -> usize {
-        self.memmap_response
-            .map(|m| m.entries().len())
-            .unwrap_or(0)
+        self.memmap_response.map(|m| m.entries().len()).unwrap_or(0)
     }
 
     fn region(&self, index: usize) -> Option<Self::Region> {

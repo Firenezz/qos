@@ -2,6 +2,7 @@
 #![no_main]
 #![feature(custom_test_frameworks)]
 #![feature(abi_riscv_interrupt)]
+#![feature(fn_align)]
 #![test_runner(crate::test_runner)]
 
 extern crate alloc;
@@ -10,8 +11,9 @@ pub mod arch;
 pub mod boot;
 pub mod console;
 pub mod definitions;
-pub mod kernel;
 pub mod helpers;
+pub mod kernel;
+pub mod platform;
 pub mod startup;
 
 use crate::arch::Current;
@@ -24,7 +26,7 @@ pub fn halt() -> ! {
 #[panic_handler]
 pub fn panic(info: &core::panic::PanicInfo) -> ! {
     log::error!("Panic: {}", info);
-    <<Current as arch::Arch>::Cpu as crate::arch::Processor>::halt()
+    halt()
 }
 
 pub fn test_runner(_tests: &[&dyn Fn()]) {

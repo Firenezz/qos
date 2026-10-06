@@ -1,6 +1,10 @@
 use core::marker::PhantomData;
 
-use crate::{MemoryArea, PhysicalAddress, allocator::{FrameAllocator, FrameCount, FrameUsage}, arch::Arch};
+use crate::{
+    MemoryArea, PhysicalAddress,
+    allocator::{FrameAllocator, FrameCount, FrameUsage},
+    arch::Arch,
+};
 
 pub struct BumpAllocator<A> {
     orig_areas: (&'static [MemoryArea], usize),
@@ -9,8 +13,15 @@ pub struct BumpAllocator<A> {
 }
 
 impl<A: Arch> BumpAllocator<A> {
-    pub unsafe fn new(orig_areas: (&'static [MemoryArea], usize), cur_areas: (&'static [MemoryArea], usize)) -> Self {
-        Self { orig_areas, cur_areas, _marker: PhantomData }
+    pub unsafe fn new(
+        orig_areas: (&'static [MemoryArea], usize),
+        cur_areas: (&'static [MemoryArea], usize),
+    ) -> Self {
+        Self {
+            orig_areas,
+            cur_areas,
+            _marker: PhantomData,
+        }
     }
 
     pub fn areas(&self) -> (&'static [MemoryArea], &'static [MemoryArea]) {

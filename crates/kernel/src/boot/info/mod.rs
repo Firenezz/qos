@@ -17,9 +17,7 @@ pub struct BootInfo {
     pub bsp_hw_id: u64,
 
     /// Physical base of the kernel image, if known.
-    pub kernel_phys: Capability<u64>,
-    /// Virtual base of the kernel image, if known.
-    pub kernel_virt: Capability<u64>,
+    pub kernel_address: Option<KernelAddressInfo>,
 
     /// Higher-half direct map offset (phys + offset → virt), if provided.
     pub hhdm_offset: Option<u64>,
@@ -27,12 +25,22 @@ pub struct BootInfo {
     pub cpus: Capability<CpuMap>,
 
     pub framebuffer: Capability<FramebufferInfo>,
-    /// Physical address of the ACPI RSDP, if any.
-    pub rsdp: Capability<u64>,
+    /// Physical address of the ACPI RSDP, if any. The absence of this capability doesn't indicate the absence of ACPI,
+    ///
+    /// only that the bootloader didn't provide it. It could be in uefi system table or in a separate table.
+    pub rsdp: Capability<&'static ()>,
     /// Virtual pointer to an FDT blob, if any.
     pub dtb: Capability<*const u8>,
     /// Virtual/physical pointer to the EFI system table, if any.
     pub efi_system_table: Capability<*const ()>,
+    /// Command line string, if any.
+    pub cmd_line: Capability<&'static str>,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct KernelAddressInfo {
+    pub physical_base: Option<*const ()>,
+    pub virtual_base: Option<*const ()>,
 }
 
 impl BootInfo {
@@ -40,14 +48,14 @@ impl BootInfo {
         Self {
             architecture: Architecture::Unknown,
             bsp_hw_id: 0,
-            kernel_phys: Capability::Absent,
-            kernel_virt: Capability::Absent,
+            kernel_address: None,
             hhdm_offset: None,
             cpus: Capability::Absent,
             framebuffer: Capability::Absent,
             rsdp: Capability::Absent,
             dtb: Capability::Absent,
             efi_system_table: Capability::Absent,
+            cmd_line: Capability::Absent,
         }
     }
 }
@@ -111,16 +119,25 @@ pub struct CpuInfo {
 
 impl CpuInfo {
     pub const fn new(cpu_id: u32, hw_id: u64, acpi_uid: Capability<u32>, is_bsp: bool) -> Self {
-        Self { cpu_id, hw_id, acpi_uid, is_bsp }
+        Self {
+            cpu_id,
+            hw_id,
+            acpi_uid,
+            is_bsp,
+        }
     }
 }
 
 impl Into<crate::kernel::cpu::ProcessorInfo> for CpuInfo {
     fn into(self) -> crate::kernel::cpu::ProcessorInfo {
-        crate::kernel::cpu::ProcessorInfo::new(self.cpu_id as usize, self.hw_id as usize, match self.acpi_uid {
-            Capability::Present(uid) => Some(uid as u64),
-            Capability::Absent => None,
-        })
+        crate::kernel::cpu::ProcessorInfo::new(
+            self.cpu_id as usize,
+            self.hw_id as usize,
+            match self.acpi_uid {
+                Capability::Present(uid) => Some(uid as u64),
+                Capability::Absent => None,
+            },
+        )
     }
 }
 

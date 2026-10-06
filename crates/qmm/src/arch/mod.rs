@@ -67,11 +67,9 @@ pub trait Arch: Clone + Copy {
 
     const PAGE_SIZE: usize = 1 << Self::PAGE_SHIFT;
     const PAGE_OFFSET_MASK: usize = Self::PAGE_SIZE - 1;
-    const PAGE_ADDRESS_SHIFT: usize =
-        Self::PAGE_LEVELS * Self::PAGE_ENTRY_SHIFT + Self::PAGE_SHIFT;
+    const PAGE_ADDRESS_SHIFT: usize = Self::PAGE_LEVELS * Self::PAGE_ENTRY_SHIFT + Self::PAGE_SHIFT;
     const PAGE_ADDRESS_SIZE: u64 = 1 << (Self::PAGE_ADDRESS_SHIFT as u64);
-    const PAGE_ADDRESS_MASK: usize =
-        (Self::PAGE_ADDRESS_SIZE - (Self::PAGE_SIZE as u64)) as usize;
+    const PAGE_ADDRESS_MASK: usize = (Self::PAGE_ADDRESS_SIZE - (Self::PAGE_SIZE as u64)) as usize;
     const PAGE_ENTRY_SIZE: usize = 1 << (Self::PAGE_SHIFT - Self::PAGE_ENTRY_SHIFT);
     const PAGE_ENTRIES: usize = 1 << Self::PAGE_ENTRY_SHIFT;
     const PAGE_ENTRY_MASK: usize = Self::PAGE_ENTRIES - 1;
@@ -79,8 +77,7 @@ pub trait Arch: Clone + Copy {
 
     const ENTRY_ADDRESS_SIZE: usize = 1 << Self::ENTRY_ADDRESS_WIDTH;
     const ENTRY_ADDRESS_MASK: usize = Self::ENTRY_ADDRESS_SIZE - 1;
-    const ENTRY_FLAGS_MASK: usize =
-        !(Self::ENTRY_ADDRESS_MASK << Self::ENTRY_ADDRESS_SHIFT);
+    const ENTRY_FLAGS_MASK: usize = !(Self::ENTRY_ADDRESS_MASK << Self::ENTRY_ADDRESS_SHIFT);
 
     /// Sign-extends `addr` using this architecture's virtual address width.
     #[inline]
@@ -174,8 +171,17 @@ pub trait Arch: Clone + Copy {
         let addr = phys
             .address()
             .checked_add(Self::hhdm_offset())
-            .unwrap_or_else(|| panic!("phys_to_virt({:#x}) overflow during HHDM offset calculation", phys.address()));
-        Self::try_virt(addr)
-            .unwrap_or_else(|_| panic!("phys_to_virt({:#x}) produced non-canonical address during HHDM offset calculation", addr))
+            .unwrap_or_else(|| {
+                panic!(
+                    "phys_to_virt({:#x}) overflow during HHDM offset calculation",
+                    phys.address()
+                )
+            });
+        Self::try_virt(addr).unwrap_or_else(|_| {
+            panic!(
+                "phys_to_virt({:#x}) produced non-canonical address during HHDM offset calculation",
+                addr
+            )
+        })
     }
 }

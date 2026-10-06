@@ -2,7 +2,7 @@ use spin::Mutex;
 
 use crate::boot::memory::{BootMemoryMap, BootMemoryRegion, ReclaimStage};
 use crate::definitions::PhysicalAddress;
-use crate::kernel::memory::{MemoryMap, MemoryRegion, MAX_SNAPSHOT_REGIONS};
+use crate::kernel::memory::{MAX_SNAPSHOT_REGIONS, MemoryMap, MemoryRegion};
 
 static MEMORY: Mutex<MemoryMap> = Mutex::new(MemoryMap::empty());
 

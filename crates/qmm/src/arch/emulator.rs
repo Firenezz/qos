@@ -8,7 +8,7 @@ extern crate std;
 use core::ptr;
 use std::sync::Mutex;
 
-use crate::{MemoryArea, PhysicalAddress, TableKind, VirtualAddress, MEGABYTE};
+use crate::{MEGABYTE, MemoryArea, PhysicalAddress, TableKind, VirtualAddress};
 
 use super::Arch;
 

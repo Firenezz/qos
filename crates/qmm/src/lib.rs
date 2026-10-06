@@ -10,12 +10,12 @@ pub const GIGABYTE: usize = MEGABYTE * 1024;
 #[cfg(target_pointer_width = "64")]
 pub const TERABYTE: usize = GIGABYTE * 1024;
 
-pub mod arch;
 pub mod allocator;
+pub mod arch;
 pub mod hhdm;
 pub mod page;
-pub mod svpbmt;
 pub mod structures;
+pub mod svpbmt;
 
 use structures::*;
 
@@ -77,11 +77,11 @@ pub const fn is_canonical_virt(addr: usize, bits: u32) -> bool {
 
 #[allow(unused_imports)]
 pub mod prelude {
-    pub use crate::structures::*;
-    pub use crate::page::*;
     pub use crate::allocator::*;
-    pub use crate::arch::*;
     pub use crate::arch::riscv64::*;
+    pub use crate::arch::*;
     pub use crate::hhdm::*;
+    pub use crate::page::*;
+    pub use crate::structures::*;
     pub use crate::svpbmt::*;
 }

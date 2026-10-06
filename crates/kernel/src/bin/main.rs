@@ -7,7 +7,6 @@
 #![feature(custom_test_frameworks)]
 #![test_runner(::qos_kernel::test_runner)]
 
-
 #[cfg(feature = "boot-limine")]
 mod limine_image {
     use limine::{RequestsEndMarker, RequestsStartMarker};

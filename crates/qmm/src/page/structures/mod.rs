@@ -2,11 +2,11 @@ use core::marker::PhantomData;
 
 use crate::{KILOBYTE, PhysicalAddress, VirtualAddress};
 
-pub mod table;
+pub mod debug_tree;
 pub mod entry;
 pub mod flags;
 pub mod flush;
-pub mod debug_tree;
+pub mod table;
 
 pub use debug_tree::DebugTreeOpts;
 
@@ -19,7 +19,8 @@ pub struct PhysicalFrame<SIZE: PageSize = PageSize4KiB> {
 pub struct PageSize4KiB;
 
 /// Trait for abstracting over the three possible page sizes on x86_64, 4KiB, 2MiB, 1GiB.
-pub trait PageSize: Copy + Eq + PartialOrd + Ord { // TODO: Add Sealed trait
+pub trait PageSize: Copy + Eq + PartialOrd + Ord {
+    // TODO: Add Sealed trait
     /// The page size in bytes.
     const SIZE: u64;
 
@@ -50,6 +51,9 @@ impl<SIZE: PageSize> Page<SIZE> {
         if !start_address.is_aligned(Self::SIZE) {
             panic!("Start address is not aligned to the page size");
         }
-        Self { start_address, phantom: PhantomData }
+        Self {
+            start_address,
+            phantom: PhantomData,
+        }
     }
 }

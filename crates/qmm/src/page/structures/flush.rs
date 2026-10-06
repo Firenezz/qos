@@ -2,7 +2,6 @@ use core::{marker::PhantomData, mem};
 
 use crate::{arch::Arch, structures::VirtualAddress};
 
-
 pub trait Flusher<A> {
     fn consume(&mut self, flush: PageFlush<A>);
 }
@@ -51,13 +50,13 @@ impl<A: Arch> PageFlushAll<A> {
     }
 }
 
-impl <A: Arch> Drop for PageFlushAll<A> {
+impl<A: Arch> Drop for PageFlushAll<A> {
     fn drop(&mut self) {
         A::invalidate_all();
     }
 }
 
-impl <A: Arch> Flusher<A> for PageFlushAll<A> {
+impl<A: Arch> Flusher<A> for PageFlushAll<A> {
     fn consume(&mut self, flush: PageFlush<A>) {
         flush.flush();
     }

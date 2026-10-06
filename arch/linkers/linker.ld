@@ -54,6 +54,21 @@ SECTIONS
         *(.dynamic)
     } :data :dynamic
 
+    /*
+     * Early-boot scratch (CPU map snapshot, …). Collected before catch-all
+     * `.bss.*` so it is not swallowed into permanent BSS. Page-aligned for
+     * PMM free of [__boot_reclaim_start, __boot_reclaim_end) after BootInfo
+     * is consumed (do not keep &'static into this range past that point).
+     */
+    .boot_reclaim (NOLOAD) : ALIGN(4096) {
+        __boot_reclaim_start = .;
+        KEEP(*(.boot_reclaim .boot_reclaim.*))
+        KEEP(*(.bss.reclaim .bss.reclaim.*))
+        KEEP(*(.data.reclaim .data.reclaim.*))
+        . = ALIGN(4096);
+        __boot_reclaim_end = .;
+    } :data
+
     .bss : ALIGN(4096) {
         *(.sbss .sbss.*)
         *(.bss .bss.*)

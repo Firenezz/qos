@@ -75,21 +75,45 @@ impl<A: Arch> PageTable<A> {
 
         for i in 0..A::PAGE_ENTRIES {
             let Some(entry) = (unsafe { self.entry(i) }) else {
-                flush_skipped(self, f, indent, opts, skip_start, i.saturating_sub(1), skip_pte);
+                flush_skipped(
+                    self,
+                    f,
+                    indent,
+                    opts,
+                    skip_start,
+                    i.saturating_sub(1),
+                    skip_pte,
+                );
                 skip_start = None;
                 skip_pte = None;
                 continue;
             };
 
             if !entry.present() {
-                flush_skipped(self, f, indent, opts, skip_start, i.saturating_sub(1), skip_pte);
+                flush_skipped(
+                    self,
+                    f,
+                    indent,
+                    opts,
+                    skip_start,
+                    i.saturating_sub(1),
+                    skip_pte,
+                );
                 skip_start = None;
                 skip_pte = None;
                 continue;
             }
 
             if entry.is_table_pointer() {
-                flush_skipped(self, f, indent, opts, skip_start, i.saturating_sub(1), skip_pte);
+                flush_skipped(
+                    self,
+                    f,
+                    indent,
+                    opts,
+                    skip_start,
+                    i.saturating_sub(1),
+                    skip_pte,
+                );
                 skip_start = None;
                 skip_pte = None;
 
@@ -116,7 +140,15 @@ impl<A: Arch> PageTable<A> {
                 continue;
             }
 
-            flush_skipped(self, f, indent, opts, skip_start, i.saturating_sub(1), skip_pte);
+            flush_skipped(
+                self,
+                f,
+                indent,
+                opts,
+                skip_start,
+                i.saturating_sub(1),
+                skip_pte,
+            );
             skip_start = None;
             skip_pte = None;
 
@@ -221,7 +253,10 @@ impl<A: Arch> PageTable<A> {
     }
 }
 
-fn leaf_phys_range<A: Arch>(entry: &PageTableEntry<A>, level: usize) -> Option<PhysicalAddressRange> {
+fn leaf_phys_range<A: Arch>(
+    entry: &PageTableEntry<A>,
+    level: usize,
+) -> Option<PhysicalAddressRange> {
     let base = entry.address().ok()?;
     let size = 1usize << (A::PAGE_SHIFT + level * A::PAGE_ENTRY_SHIFT);
     Some(PhysicalAddressRange::from_base_len(base, size))

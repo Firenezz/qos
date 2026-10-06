@@ -1,4 +1,3 @@
-
 use crate::PhysicalAddress;
 
 pub mod bump;
@@ -17,7 +16,7 @@ impl FrameCount {
 }
 
 #[derive(Debug, Clone, Copy)]
-pub struct FrameUsage{
+pub struct FrameUsage {
     pub total: FrameCount,
     pub used: FrameCount,
 }
@@ -47,7 +46,6 @@ impl FrameUsage {
         FrameCount(self.total.0 - self.used.0)
     }
 }
-
 
 pub unsafe trait FrameAllocator {
     fn allocate(&mut self, count: FrameCount) -> Option<PhysicalAddress>;
