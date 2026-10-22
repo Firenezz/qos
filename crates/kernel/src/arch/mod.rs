@@ -1,6 +1,6 @@
 //! Architecture abstraction.
 //!
-//! Boot reaches [`crate::boot::kernel_main`] with a [`crate::boot::BootInfo`].
+//! Boot reaches [`crate::kernel::kernel_main`] with a [`crate::boot::BootInfo`].
 //! Arch code owns CPU identity, early bring-up, and halt — not bootloader parsing.
 
 pub mod device;

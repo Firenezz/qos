@@ -1,7 +1,7 @@
-//! Bootloader-agnostic memory map traits.
+//! Bootloader-agnostic memory map traits and owned handoff snapshot.
 
 use crate::definitions::PhysicalAddress;
-use crate::kernel::memory::{MemoryKind, MemoryRegion};
+use crate::kernel::memory::{MAX_SNAPSHOT_REGIONS, MemoryKind, MemoryRegion};
 
 /// When a region may be promoted into the kernel's allocatable pool.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -63,5 +63,81 @@ impl<M: BootMemoryMap> BootMemoryMap for &M {
 
     fn region(&self, index: usize) -> Option<Self::Region> {
         (*self).region(index)
+    }
+}
+
+/// Owned copy of the bootloader memmap for handoff into [`crate::boot::BootInfo`].
+///
+/// Protocol adapters fill this; [`crate::kernel::kernel_main`] installs it into
+/// the global startup memory map.
+#[derive(Clone, Debug)]
+pub struct BootMemorySnapshot {
+    regions: [MemoryRegion; MAX_SNAPSHOT_REGIONS],
+    len: usize,
+}
+
+impl BootMemorySnapshot {
+    pub const fn empty() -> Self {
+        Self {
+            regions: [MemoryRegion::EMPTY; MAX_SNAPSHOT_REGIONS],
+            len: 0,
+        }
+    }
+
+    pub fn from_boot_map<M: BootMemoryMap>(boot: &M) -> Self {
+        let mut regions = [MemoryRegion::EMPTY; MAX_SNAPSHOT_REGIONS];
+        let count = boot.region_count().min(MAX_SNAPSHOT_REGIONS);
+        for i in 0..count {
+            let Some(region) = boot.region(i) else {
+                break;
+            };
+            regions[i] = region.to_memory_region();
+        }
+        Self {
+            regions,
+            len: count,
+        }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.len == 0
+    }
+
+    pub fn regions(&self) -> &[MemoryRegion] {
+        &self.regions[..self.len]
+    }
+}
+
+impl BootMemoryMap for BootMemorySnapshot {
+    type Region = MemoryRegion;
+
+    fn region_count(&self) -> usize {
+        self.len
+    }
+
+    fn region(&self, index: usize) -> Option<Self::Region> {
+        self.regions().get(index).copied()
+    }
+}
+
+impl BootMemoryKind for MemoryKind {
+    fn to_memory_kind(self) -> MemoryKind {
+        self
+    }
+}
+
+impl BootMemoryRegion for MemoryRegion {
+    type Kind = MemoryKind;
+
+    fn base(&self) -> u64 {
+        MemoryRegion::base(self).as_usize() as u64
+    }
+
+    fn length(&self) -> u64 {
+        MemoryRegion::length(self) as u64
+    }
+
+    fn kind(&self) -> Self::Kind {
+        self.kind
     }
 }

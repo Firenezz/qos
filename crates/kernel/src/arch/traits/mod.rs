@@ -17,7 +17,7 @@ pub trait Arch: Sized {
     type Cpu: Processor;
 
     /// Very early arch setup after GP/stack are valid, before protocol handoff returns
-    /// into [`crate::boot::kernel_main`]. Safe to leave empty.
+    /// into [`crate::kernel::kernel_main`]. Safe to leave empty.
     ///
     /// # Safety
     /// Called once on the BSP with interrupt state undefined.

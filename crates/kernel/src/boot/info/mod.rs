@@ -4,11 +4,12 @@
 //! Optional firmware services use [`Capability`].
 
 use crate::boot::capabilities::Capability;
+use crate::boot::memory::BootMemorySnapshot;
 
 /// Snapshot of what the bootloader handed the kernel.
 ///
 /// Pointers/slices that come from bootloader memory are only valid until that
-/// memory is reclaimed.
+/// memory is reclaimed. Owned copies (e.g. [`BootMemorySnapshot`]) remain valid.
 #[derive(Debug, Clone)]
 pub struct BootInfo {
     pub architecture: Architecture,
@@ -21,6 +22,9 @@ pub struct BootInfo {
 
     /// Higher-half direct map offset (phys + offset → virt), if provided.
     pub hhdm_offset: Option<u64>,
+
+    /// Owned bootloader memmap; installed by [`crate::kernel::kernel_main`].
+    pub memory: BootMemorySnapshot,
 
     pub cpus: Capability<CpuMap>,
 
@@ -50,6 +54,7 @@ impl BootInfo {
             bsp_hw_id: 0,
             kernel_address: None,
             hhdm_offset: None,
+            memory: BootMemorySnapshot::empty(),
             cpus: Capability::Absent,
             framebuffer: Capability::Absent,
             rsdp: Capability::Absent,

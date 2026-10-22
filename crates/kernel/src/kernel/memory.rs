@@ -1,17 +1,20 @@
+//! Kernel memory map: boot snapshot plus managed allocatable regions.
+
 use core::fmt::{self, Arguments};
 
 use crate::boot::memory::ReclaimStage;
 use crate::definitions::PhysicalAddress;
-use crate::definitions::PhysicalAddressRange;
 
 pub mod frame;
 pub mod region;
+
+pub use region::{DeviceMemoryRegion, MemoryKind, MemoryRegion};
 
 pub const MAX_SNAPSHOT_REGIONS: usize = 128;
 pub const MAX_ALLOCATABLE_REGIONS: usize = 64;
 
 /// Immutable bootloader memmap snapshot plus the kernel's managed region pool.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct MemoryMap {
     snapshot: ([MemoryRegion; MAX_SNAPSHOT_REGIONS], usize),
     /// RAM available to the PMM and registered device/MMIO regions (`MemoryKind::Device`).
@@ -224,35 +227,13 @@ impl MemoryMap {
         self.allocatable.1 += 1;
         true
     }
-}
 
-impl fmt::Display for MemoryMap {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "MemoryMap {{")?;
-        write!(f, "snapshot: {:?}", self.snapshot)?;
-        write!(f, "allocatable: {:?}", self.allocatable)?;
-        write!(f, "reclaim_stage: {:?}", self.reclaim_stage)?;
-        write!(f, "}}")
-    }
-}
-
-impl fmt::Debug for MemoryMap {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "MemoryMap {{")?;
-        write!(f, "snapshot: {:?}", self.snapshot)?;
-        write!(f, "allocatable: {:?}", self.allocatable)?;
-        write!(f, "reclaim_stage: {:?}", self.reclaim_stage)?;
-        write!(f, "}}")
-    }
-}
-
-impl MemoryMap {
     pub fn debug_allocatable(&self, f: impl Fn(&Arguments<'_>)) {
         for region in self.ram() {
             f(&format_args!(
-                "{}..={} ({:?})",
-                region.range.start(),
-                region.range.end_inclusive(),
+                "{:016X}..={:016X} ({:?})",
+                region.range.start().as_u64(),
+                region.range.end_inclusive().as_u64(),
                 region.kind,
             ));
         }
@@ -261,9 +242,9 @@ impl MemoryMap {
     pub fn debug_device(&self, f: impl Fn(&Arguments<'_>)) {
         for region in self.devices() {
             f(&format_args!(
-                "{}..={} ({:?})",
-                region.range.start(),
-                region.range.end_inclusive(),
+                "{:016X}..={:016X} ({:?})",
+                region.range.start().as_u64(),
+                region.range.end_inclusive().as_u64(),
                 region.kind,
             ));
         }
@@ -272,9 +253,9 @@ impl MemoryMap {
     pub fn debug_io_mapped(&self, f: impl Fn(&Arguments<'_>)) {
         for region in self.io_mapped() {
             f(&format_args!(
-                "{}..={} ({:?})",
-                region.range.start(),
-                region.range.end_inclusive(),
+                "{:016X}..={:016X} ({:?})",
+                region.range.start().as_u64(),
+                region.range.end_inclusive().as_u64(),
                 region.kind,
             ));
         }
@@ -284,146 +265,31 @@ impl MemoryMap {
         for i in 0..self.snapshot.1 {
             let region = self.snapshot.0[i];
             f(&format_args!(
-                "{}..={} ({:?})",
-                region.range.start(),
-                region.range.end_inclusive(),
+                "{:016X}..={:016X} ({:?})",
+                region.range.start().as_u64(),
+                region.range.end_inclusive().as_u64(),
                 region.kind,
             ));
         }
     }
 }
 
-/// A physical MMIO / device memory range.
-pub type DeviceMemoryRegion = PhysicalAddressRange;
-
-/// A classified physical memory region from the boot memmap.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct MemoryRegion {
-    pub range: PhysicalAddressRange,
-    pub kind: MemoryKind,
-}
-
-impl MemoryRegion {
-    pub const EMPTY: Self = Self {
-        range: PhysicalAddressRange::EMPTY,
-        kind: MemoryKind::Reserved,
-    };
-
-    pub fn new(base: PhysicalAddress, length: usize, kind: MemoryKind) -> Self {
-        Self {
-            range: PhysicalAddressRange::from_base_len(base, length),
-            kind,
-        }
-    }
-
-    pub fn base(&self) -> PhysicalAddress {
-        self.range.base()
-    }
-
-    pub fn length(&self) -> usize {
-        self.range.len()
-    }
-
-    pub fn end_exclusive(&self) -> PhysicalAddress {
-        self.range.end()
-    }
-
-    pub fn end_inclusive(&self) -> PhysicalAddress {
-        self.range.end_inclusive()
+impl MemoryMap {
+    pub fn dump(&self) {
+        log::debug!("Memory map:");
+        log::debug!("Allocatable:");
+        self.debug_allocatable(|args| log::debug!("{args}"));
+        log::debug!("Devices:");
+        self.debug_device(|args| log::debug!("{args}"));
+        log::debug!("IO mapped:");
+        self.debug_io_mapped(|args| log::debug!("{args}"));
+        log::debug!("Snapshot:");
+        self.debug_snapshot(|args| log::debug!("{args}"));
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum MemoryKind {
-    Usable,
-    Device,
-    Reserved,
-    AcpiReclaimable,
-    AcpiNvs,
-    BadMemory,
-    BootloaderReclaimable,
-    KernelAndModules,
-    Framebuffer,
-    ReservedMapped,
-    Unknown(u64),
-}
-
-impl MemoryKind {
-    /// When this region may be promoted into the allocatable pool.
-    pub const fn reclaim_stage(self) -> Option<ReclaimStage> {
-        match self {
-            Self::Usable => Some(ReclaimStage::Immediate),
-            Self::BootloaderReclaimable => Some(ReclaimStage::BootloaderDone),
-            Self::AcpiReclaimable => Some(ReclaimStage::AcpiParsed),
-            _ => None,
-        }
-    }
-
-    pub const fn is_ram(self) -> bool {
-        self.reclaim_stage().is_some()
-    }
-
-    pub const fn is_device(self) -> bool {
-        matches!(self, Self::Device)
-    }
-
-    /// MMIO / firmware IO windows (HHDM-mapped reserved, framebuffer, NVS, devices).
-    pub const fn is_io_mapped(self) -> bool {
-        matches!(
-            self,
-            Self::Device | Self::ReservedMapped | Self::Framebuffer | Self::AcpiNvs
-        )
-    }
-
-    /// Fixed regions from the boot memmap — not PMM, not generic device MMIO.
-    ///
-    /// Framebuffer details come from [`crate::boot::BootInfo::framebuffer`], not the device pool.
-    pub const fn is_special(self) -> bool {
-        matches!(
-            self,
-            Self::Framebuffer | Self::KernelAndModules | Self::AcpiNvs | Self::BadMemory
-        )
-    }
-
-    /// Firmware-reserved address space. Not RAM; kept in the snapshot only until
-    /// ACPI/DT explicitly registers MMIO via [`MemoryMap::register_device`].
-    pub const fn is_firmware_reserved(self) -> bool {
-        matches!(self, Self::Reserved | Self::ReservedMapped)
-    }
-
-    pub const fn is_reserved(self) -> bool {
-        matches!(
-            self,
-            Self::Reserved
-                | Self::BadMemory
-                | Self::ReservedMapped
-                | Self::Framebuffer
-                | Self::KernelAndModules
-                | Self::AcpiNvs
-        )
-    }
-
-    pub const fn is_acpi_nvs(self) -> bool {
-        matches!(self, Self::AcpiNvs)
-    }
-
-    pub const fn is_bad_memory(self) -> bool {
-        matches!(self, Self::BadMemory)
-    }
-
-    pub const fn is_framebuffer(self) -> bool {
-        matches!(self, Self::Framebuffer)
-    }
-
-    pub const fn is_kernel_and_modules(self) -> bool {
-        matches!(self, Self::KernelAndModules)
-    }
-
-    pub const fn is_unknown(self) -> Option<u64> {
-        if let Self::Unknown(value) = self {
-            Some(value)
-        } else {
-            None
-        }
+impl fmt::Display for MemoryMap {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{self:?}")
     }
 }

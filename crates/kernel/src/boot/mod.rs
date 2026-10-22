@@ -1,10 +1,9 @@
-//! Boot protocols → [`BootInfo`] → [`kernel_main`].
+//! Boot protocols → [`BootInfo`] → [`crate::kernel::kernel_main`].
 //!
 //! Sequence (all bootloaders):
-//! 1. `boot_main` (arch) — set GP
-//! 2. [`early_start`] — pick protocol adapter
-//! 3. `protocol::handoff` — build [`BootInfo`]
-//! 4. [`kernel_main`] — shared kernel
+//! 1. `boot_main` (arch) — set GP, jump to protocol handoff
+//! 2. `protocol::handoff` — build [`BootInfo`]
+//! 3. [`crate::kernel::kernel_main`] — shared kernel
 
 pub mod capabilities;
 pub mod info;
@@ -15,7 +14,9 @@ pub mod limine;
 
 pub use capabilities::Capability;
 pub use info::{Architecture, BootInfo, CpuInfo, CpuMap, FramebufferInfo};
-pub use memory::{BootMemoryKind, BootMemoryMap, BootMemoryRegion, ReclaimStage};
+pub use memory::{
+    BootMemoryKind, BootMemoryMap, BootMemoryRegion, BootMemorySnapshot, ReclaimStage,
+};
 
 pub trait BootLoader {
     fn handoff(&self) -> !;

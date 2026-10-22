@@ -4,7 +4,7 @@
 /// - linker `ENTRY(boot_main)` / ELF `e_entry`
 /// - Limine `EntryPointRequest` (same symbol — no second entry stub)
 ///
-/// Sets `gp`, then enters [`crate::boot::early_start`].
+/// Sets `gp`, then enters [`crate::boot::limine::handoff`].
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn boot_main() -> ! {
     use core::arch::asm;

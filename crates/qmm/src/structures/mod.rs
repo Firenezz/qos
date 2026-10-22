@@ -31,6 +31,14 @@ impl PhysicalAddress {
     pub fn sub(&self, offset: usize) -> Self {
         Self(self.0 - offset)
     }
+
+    pub fn as_u64(&self) -> u64 {
+        self.0 as u64
+    }
+
+    pub fn from_u64(addr: u64) -> Self {
+        Self(addr as usize)
+    }
 }
 
 impl core::fmt::Debug for PhysicalAddress {

@@ -11,10 +11,11 @@ use limine::{
     },
 };
 
-use crate::boot::{Architecture, BootInfo, BootLoader, Capability, CpuInfo};
+use crate::boot::{
+    Architecture, BootInfo, BootLoader, BootMemorySnapshot, Capability, CpuInfo,
+};
 #[cfg(target_arch = "riscv64")]
 use crate::boot::{Capability::Absent, info::KernelAddressInfo};
-use crate::startup;
 
 use self::memmap::LimineMemoryKind;
 
@@ -96,10 +97,12 @@ impl TryFrom<LimineBootInfo> for BootInfo {
     type Error = ();
 
     fn try_from(limine_boot_info: LimineBootInfo) -> Result<BootInfo, Self::Error> {
-        if limine_boot_info.memmap_response.is_some() {
-            log::trace!("Initializing memory map from Limine");
-            startup::memory::init_from_boot(&limine_boot_info);
-        }
+        let memory = if limine_boot_info.memmap_response.is_some() {
+            log::trace!("Copying memory map from Limine into BootInfo");
+            BootMemorySnapshot::from_boot_map(&limine_boot_info)
+        } else {
+            BootMemorySnapshot::empty()
+        };
 
         #[cfg(target_arch = "riscv64")]
         return Ok(Self {
@@ -110,6 +113,7 @@ impl TryFrom<LimineBootInfo> for BootInfo {
                 .bsp_hartid as u64,
             efi_system_table: map_efi_system_table(&limine_boot_info),
             hhdm_offset: limine_boot_info.hhdm_response.map(|hhdm| hhdm.offset),
+            memory,
             cmd_line: limine_boot_info
                 .executable_cmdline_response
                 .map_or(Capability::Absent, |cmd_line| {
@@ -144,6 +148,7 @@ impl TryFrom<LimineBootInfo> for BootInfo {
                 .bsp_lapic_id as u64,
             efi_system_table: map_efi_system_table(&limine_boot_info),
             hhdm_offset: limine_boot_info.hhdm_response.map(|hhdm| hhdm.offset),
+            memory,
             cmd_line: limine_boot_info
                 .executable_cmdline_response
                 .map_or(Capability::Absent, |cmd_line| {
@@ -272,7 +277,7 @@ fn debug_bootloader_memmap(limine_info: &LimineBootInfo) {
     }
 }
 
-/// Collect Limine responses and enter [`crate::boot::kernel_main`].
+/// Collect Limine responses and enter [`crate::kernel::kernel_main`].
 pub fn handoff() -> ! {
     let actual_revision = BASE_REVISION
         .actual_revision()
