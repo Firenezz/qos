@@ -1,6 +1,13 @@
 use core::marker::PhantomData;
 
-use crate::{PhysicalAddress, arch::Arch, page::structures::{flags::{PageFlags, Pbmt}, table::PageTable}};
+use crate::{
+    PhysicalAddress,
+    arch::Arch,
+    page::structures::{
+        flags::{PageFlags, Pbmt},
+        table::PageTable,
+    },
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct PageTableEntry<A> {
@@ -11,7 +18,8 @@ pub struct PageTableEntry<A> {
 impl<A: Arch> PageTableEntry<A> {
     #[inline(always)]
     pub fn new(address: impl Into<usize>, flags: usize) -> Self {
-        let data = (((address.into() >> A::PAGE_SHIFT) & A::ENTRY_ADDRESS_MASK) << A::ENTRY_ADDRESS_SHIFT)
+        let data = (((address.into() >> A::PAGE_SHIFT) & A::ENTRY_ADDRESS_MASK)
+            << A::ENTRY_ADDRESS_SHIFT)
             | flags;
 
         Self::from_data(data)
@@ -19,7 +27,10 @@ impl<A: Arch> PageTableEntry<A> {
 
     #[inline(always)]
     pub fn from_data(data: usize) -> Self {
-        Self { data, phantom: PhantomData }
+        Self {
+            data,
+            phantom: PhantomData,
+        }
     }
 
     #[inline(always)]
@@ -40,7 +51,7 @@ impl<A: Arch> PageTableEntry<A> {
     /// Whether this entry is worth printing in a filtered page-table dump.
     ///
     /// Table pointers are omitted (`false`) — callers always recurse through them.
-  /// Flags standard Limine kernel RAM leaves (`0xcf`-style RWX/PMA) as uninteresting.
+    /// Flags standard Limine kernel RAM leaves (`0xcf`-style RWX/PMA) as uninteresting.
     #[inline]
     pub fn is_noteworthy(&self, level: usize) -> bool {
         if !self.present() || self.is_table_pointer() {
@@ -68,11 +79,7 @@ impl<A: Arch> PageTableEntry<A> {
             ((self.data >> A::ENTRY_ADDRESS_SHIFT) & A::ENTRY_ADDRESS_MASK) << A::PAGE_SHIFT,
         );
 
-        if self.present() {
-            Ok(addr)
-        } else {
-            Err(addr)
-        }
+        if self.present() { Ok(addr) } else { Err(addr) }
     }
 
     #[inline(always)]

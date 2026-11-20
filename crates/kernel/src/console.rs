@@ -66,7 +66,14 @@ impl log::Log for UartLogger {
             if let Some(uart) = console.as_mut() {
                 match record.level() {
                     log::Level::Debug | log::Level::Trace | log::Level::Error => {
-                        let _ = write!(uart, "line {}, module {}: [{}] {}", record.line().unwrap(), record.module_path().unwrap(), record.level(), record.args());
+                        let _ = write!(
+                            uart,
+                            "line {}, module {}: [{}] {}",
+                            record.line().unwrap(),
+                            record.module_path().unwrap(),
+                            record.level(),
+                            record.args()
+                        );
                     }
                     level => {
                         let _ = write!(uart, "[{}] {}", level, record.args());
@@ -86,7 +93,7 @@ impl log::Log for ColoredUartLogger {
     fn enabled(&self, _metadata: &log::Metadata) -> bool {
         true
     }
-    
+
     fn log(&self, record: &log::Record) {
         if !self.enabled(record.metadata()) {
             return;
@@ -103,7 +110,16 @@ impl log::Log for ColoredUartLogger {
             if let Some(uart) = console.as_mut() {
                 match record.level() {
                     log::Level::Debug | log::Level::Trace | log::Level::Error => {
-                        let _ = writeln!(uart, "line {}, module {}: {}[{}] {}{}", record.line().unwrap(), record.module_path().unwrap(), color, record.level(), record.args(), reset);
+                        let _ = writeln!(
+                            uart,
+                            "line {}, module {}: {}[{}] {}{}",
+                            record.line().unwrap(),
+                            record.module_path().unwrap(),
+                            color,
+                            record.level(),
+                            record.args(),
+                            reset
+                        );
                     }
                     level => {
                         let _ = writeln!(uart, "{}[{}] {}{}", color, level, record.args(), reset);
@@ -111,7 +127,16 @@ impl log::Log for ColoredUartLogger {
                 }
             } else {
                 // Try call sbi
-                let _ = writeln!(SbiLogger::new(), "line {}, module {}: {}[{}] {}{}", record.line().unwrap(), record.module_path().unwrap(), color, record.level(), record.args(), reset);
+                let _ = writeln!(
+                    SbiLogger::new(),
+                    "line {}, module {}: {}[{}] {}{}",
+                    record.line().unwrap(),
+                    record.module_path().unwrap(),
+                    color,
+                    record.level(),
+                    record.args(),
+                    reset
+                );
             }
         });
     }

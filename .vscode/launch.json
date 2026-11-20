@@ -1,6 +1,6 @@
 {
-    // Requires nix develop .#gdb-riscv (riscv64-none-elf-gdb + OVMF_CODE/OVMF_VARS).
-    // preLaunchTask runs: just run-riscv64-gdb  (-S -gdb tcp::3333)
+    // Requires nix develop .#gdb-riscv (or scripts/riscv64-gdb.sh) + OVMF_*.
+    // preLaunchTask: just run-riscv64-gdb (-S -gdb tcp::3333) after iso-build.
     "version": "0.2.0",
     "configurations": [
         {
@@ -14,7 +14,7 @@
             "environment": [],
             "externalConsole": false,
             "MIMode": "gdb",
-            "miDebuggerPath": "riscv64-none-elf-gdb",
+            "miDebuggerPath": "${workspaceFolder}/scripts/riscv64-gdb.sh",
             "miDebuggerArgs": "--interpreter=mi2",
             "miDebuggerServerAddress": "localhost:3333",
             "preLaunchTask": "launch gdb-server",
@@ -25,8 +25,13 @@
                     "ignoreFailures": false
                 },
                 {
-                    "description": "Load side-band DWARF from strip-debug",
-                    "text": "symbol-file ${workspaceFolder}/build/qos-kernel.sym",
+                    "description": "Search DWARF sources from repo root",
+                    "text": "set directories ${workspaceFolder}",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Reload unstripped kernel ELF (DWARF + symtab)",
+                    "text": "file ${workspaceFolder}/build/qos-kernel.elf",
                     "ignoreFailures": false
                 },
                 {
@@ -41,7 +46,6 @@
                 }
             ]
         },
-        // LLDB
         {
             "name": "QEMU LLDB (Native Debug)",
             "type": "lldb",
@@ -51,12 +55,12 @@
             "preLaunchTask": "launch gdb-server",
             "initCommands": [
                 "settings set target.default-arch riscv64",
-                "target symbols add ${workspaceFolder}/build/qos-kernel.sym"
+                "target create ${workspaceFolder}/build/qos-kernel.elf"
             ],
             "processCreateCommands": [
-                "gdb-remote localhost:3333"
+                "gdb-remote localhost:3333",
+                "continue"
             ]
         }
-        
     ]
 }

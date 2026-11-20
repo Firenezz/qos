@@ -46,6 +46,10 @@ rust-project.json
 ### Nix Flake ###
 /result
 
+### devenv ###
+.devenv*
+devenv.local.nix
+
 
 ### Build ###
 /build

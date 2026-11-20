@@ -13,16 +13,14 @@ riscv-rs = { workspace = true }
 limine = { version = "0.6.5", optional = true }
 log = { version = "0.4", features = ["release_max_level_info"] }
 spin = "0.12.2"
-uefi-raw = "0.15.1"
+uefi-raw = "0.17.0"
 uefi = { workspace = true }
 thin-vec = { version = "0.2.18", default-features = false }
-hashbrown = "0.17.1"
+hashbrown = { version = "0.17.1" }
+linked_list_allocator = "0.10.6"
 
 # TODO: make this a riscv only dependency
 sbi = "0.3.0"
-linked_list_allocator = "0.10.6"
-smallvec = "1.15.2"
-
 
 
 [features]
@@ -31,3 +29,9 @@ hcf = []
 # Protocol adapters (enable one primary path per image for now).
 boot-limine = ["dep:limine"]
 # boot-uefi = ["dep:uefi"]  # later
+
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+panic = "abort"

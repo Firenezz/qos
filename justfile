@@ -35,6 +35,7 @@ QEMU_DEVICE_RNG := "virtio-rng-pci"
 gdb-port := "3333"
 kernel-elf := build-dir / (kernel-name + ".elf")
 kernel-sym := build-dir / (kernel-name + ".sym")
+kernel-stripped := build-dir / (kernel-name + ".stripped.elf")
 kernel-map := maps-dir / (kernel-name + ".map")
 kernel-local-map := maps-dir / (kernel-name + ".local.map")
 kernel-memmap := maps-dir / (kernel-name + ".memmap.txt")
@@ -51,7 +52,7 @@ prepare-ovmf-vars: build-folder edk2-ovmf
 run-riscv64 *QEMU_ARGS: prepare-ovmf-vars iso-build
     echo "OVMF_CODE: '{{env("OVMF_CODE")}}'"
     qemu-system-riscv64 \
-        -machine virt \
+        -machine virt,acpi=on \
         -m 4G \
         -cpu rv64,svpbmt=on \
         -smp 4 \
@@ -62,7 +63,7 @@ run-riscv64 *QEMU_ARGS: prepare-ovmf-vars iso-build
         -device {{QEMU_DEVICE_RNG}} \
         -device usb-kbd \
         -device usb-mouse \
-        -serial mon:stdio \
+        -serial stdio \
         -drive if=pflash,format=raw,file={{env("OVMF_CODE")}},readonly=on \
         -drive if=pflash,format=raw,file={{build-dir}}/RISCV_VIRT_VARS.fd \
         -drive file={{build-dir}}/{{kernel-name}}.iso,format=raw,id=cd0 \
@@ -70,11 +71,15 @@ run-riscv64 *QEMU_ARGS: prepare-ovmf-vars iso-build
 
 # Build ISO and freeze QEMU until a GDB client attaches (tcp::3333).
 run-riscv64-gdb *QEMU_ARGS: prepare-ovmf-vars iso-build
+    #!/usr/bin/env bash
+    set -euo pipefail
+    test -f "{{kernel-elf}}"
+    # Marker for .vscode/tasks.json background endsPattern (after ISO/ELF exist).
     echo "GDB server listening on localhost:{{gdb-port}}"
-    qemu-system-riscv64 \
-        -machine virt \
+    exec qemu-system-riscv64 \
+        -machine virt,acpi=on \
         -m 4G \
-        -cpu rv64 \
+        -cpu rv64,svpbmt=on \
         -smp 4 \
         -device ramfb \
         -device {{QEMU_DEVICE_GPU_PCI}} \
@@ -83,20 +88,19 @@ run-riscv64-gdb *QEMU_ARGS: prepare-ovmf-vars iso-build
         -device {{QEMU_DEVICE_RNG}} \
         -device usb-kbd \
         -device usb-mouse \
-        -serial mon:stdio \
+        -serial stdio \
         -drive if=pflash,format=raw,file={{env("OVMF_CODE")}},readonly=on \
         -drive if=pflash,format=raw,file={{build-dir}}/RISCV_VIRT_VARS.fd \
         -drive file={{build-dir}}/{{kernel-name}}.iso,format=raw,id=cd0 \
         -S -gdb tcp::{{gdb-port}} \
         {{QEMU_ARGS}}
 
-# CLI GDB client (kernel symbols). Requires run-riscv64-gdb in another terminal.
-# Loads stripped ELF + side-band {{kernel-name}}.sym from `just strip-debug`.
+# CLI GDB client. Requires run-riscv64-gdb in another terminal.
+# Uses the unstripped {{kernel-elf}} (DWARF kept in-tree for debugging).
 gdb-attach:
     {{gnu-target}}-gdb \
         -ex "set architecture riscv:rv64" \
         -ex "target remote localhost:{{gdb-port}}" \
-        -ex "symbol-file {{kernel-sym}}" \
         {{kernel-elf}}
 
 run-riscv64-dumpdts: prepare-ovmf-vars
@@ -161,14 +165,16 @@ memory-map: build-folder
     @echo "wrote {{kernel-memmap}}"
     @echo "wrote {{kernel-local-map}} (excluded core/alloc/compiler_builtins/third-party)"
 
-# Split DWARF/symbols into {{kernel-name}}.sym, strip the ELF used in the ISO,
-# and add a .gnu_debuglink so GDB/LLDB can find the side-band file.
+# Optional side-band artifacts only — does not modify {{kernel-elf}} (ISO/debug stay unstripped).
+# Produces {{kernel-name}}.sym + {{kernel-name}}.stripped.elf with .gnu_debuglink.
 strip-debug: build
     {{objcopy}} --only-keep-debug {{kernel-elf}} {{kernel-sym}}
-    {{objcopy}} --strip-debug {{kernel-elf}}
-    cd {{build-dir}} && {{objcopy}} --add-gnu-debuglink={{kernel-name}}.sym {{kernel-name}}.elf
-    @echo "symbols: {{kernel-sym}}"
-    @echo "stripped ELF (ISO + debuglink): {{kernel-elf}}"
+    cp -v {{kernel-elf}} {{kernel-stripped}}
+    {{objcopy}} --strip-debug {{kernel-stripped}}
+    cd {{build-dir}} && {{objcopy}} --add-gnu-debuglink={{kernel-name}}.sym {{kernel-name}}.stripped.elf
+    @echo "symbols (side): {{kernel-sym}}"
+    @echo "stripped ELF (side): {{kernel-stripped}}"
+    @echo "unstripped ELF (ISO + GDB): {{kernel-elf}}"
 
 edk2-ovmf:
     #!/usr/bin/env bash
@@ -186,7 +192,7 @@ edk2-ovmf:
     echo "OVMF_CODE=$OVMF_CODE"
     echo "OVMF_VARS=$OVMF_VARS"
 
-iso-build: build-folder build strip-debug limine
+iso-build: build-folder build limine
     cd {{build-dir}} && pwd
     rm -rf {{build-dir}}/iso_root
     rm -f {{build-dir}}/{{kernel-name}}.iso

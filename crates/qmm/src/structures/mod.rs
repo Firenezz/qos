@@ -2,8 +2,11 @@ use core::ops::{Add, Sub};
 
 use crate::{TableKind, align_down_u64, align_up_u64};
 
+pub mod range;
 
-
+pub use range::{
+    Address, AddressRange, AddressRangeLen, PhysicalAddressRange, VirtualAddressRange,
+};
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 #[repr(transparent)]
 pub struct PhysicalAddress(pub usize);
@@ -27,6 +30,14 @@ impl PhysicalAddress {
 
     pub fn sub(&self, offset: usize) -> Self {
         Self(self.0 - offset)
+    }
+
+    pub fn as_u64(&self) -> u64 {
+        self.0 as u64
+    }
+
+    pub fn from_u64(addr: u64) -> Self {
+        Self(addr as usize)
     }
 }
 
@@ -120,11 +131,9 @@ impl VirtualAddress {
 
     #[inline]
     pub fn add(&self, offset: usize) -> Self {
-        Self(
-            self.0
-                .checked_add(offset)
-                .unwrap_or_else(|| panic!("VirtualAddress::add({:#x}, {:#x}) overflow", self.0, offset)),
-        )
+        Self(self.0.checked_add(offset).unwrap_or_else(|| {
+            panic!("VirtualAddress::add({:#x}, {:#x}) overflow", self.0, offset)
+        }))
     }
 
     #[inline]
@@ -176,8 +185,6 @@ impl Sub<usize> for PhysicalAddress {
 /// A virtual address was not canonical.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct VirtAddrNotValid(pub usize);
-
-
 
 impl VirtualAddress {
     /// Creates a virtual address without checking canonicity.

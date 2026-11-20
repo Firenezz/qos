@@ -1,11 +1,8 @@
-//! Static BSP trap stack — range lives in [`HartLocal`] (`tp`); `sscratch` mirrors the top.
+//! Static BSP trap stack — range lives in [`HartLocal`].
 //!
-//! Entry no longer swaps onto this stack (the `riscv-interrupt-s` ABI runs on the
-//! interrupted `sp`). Keep the install so nested-trap handling can reuse it later.
+//! `sscratch` stays 0 until the hart is fully booted (`cpu::arm_sscratch`).
 
-use riscv_rs::csr::sscratch;
-
-use crate::arch::riscv::device::cpu::{self, HartLocal};
+use crate::arch::riscv::device::cpu;
 
 /// Bytes reserved for the supervisor trap stack (grows down).
 pub const TRAP_STACK_SIZE: usize = 16 * 1024;
@@ -32,7 +29,9 @@ fn stack_top() -> usize {
     stack_base() + TRAP_STACK_SIZE
 }
 
-/// Install the BSP trap stack into [`HartLocal`], set `tp`, and arm `sscratch`.
+/// Install the BSP trap stack into [`HartLocal`].
+///
+/// Does not arm `sscratch` (stays 0 for the early trap path).
 ///
 /// # Safety
 ///
@@ -43,13 +42,8 @@ pub unsafe fn install() {
 
     // SAFETY: BSP only; exclusive access during bring-up.
     let hart = unsafe { &mut *core::ptr::addr_of_mut!(cpu::BSP_HART) };
+    hart.scratch = 0;
     hart.trap_stack_base = base;
     hart.trap_stack_top = top;
     hart.trap_depth = 0;
-
-    // SAFETY: `hart` is the BSP `HartLocal` for the life of the kernel.
-    unsafe {
-        cpu::set_tp(hart as *mut HartLocal);
-    }
-    sscratch::write_raw(top as u64);
 }

@@ -12,7 +12,11 @@ pub struct PageTable<A> {
 }
 
 impl<A: Arch> PageTable<A> {
-    pub unsafe fn new(base_address: VirtualAddress, physical_address: PhysicalAddress, level: usize) -> Self {
+    pub unsafe fn new(
+        base_address: VirtualAddress,
+        physical_address: PhysicalAddress,
+        level: usize,
+    ) -> Self {
         Self {
             base_address,
             physical_address,
@@ -112,7 +116,9 @@ impl<A: Arch> PageTable<A> {
 
     pub fn debug_entries(&self, f: impl Fn(fmt::Arguments<'_>)) {
         for i in 0..A::PAGE_ENTRIES {
-            if let Some(entry) = unsafe { self.entry(i) } && entry.present() {
+            if let Some(entry) = unsafe { self.entry(i) }
+                && entry.present()
+            {
                 f(format_args!("{}: 0x{:X}", i, entry.data()));
             }
         }
@@ -120,7 +126,9 @@ impl<A: Arch> PageTable<A> {
 
     pub fn debug_entries_with_address(&self, f: impl Fn(fmt::Arguments<'_>)) {
         for i in 0..A::PAGE_ENTRIES {
-            if let Some(entry) = unsafe { self.entry(i) } && entry.present() {
+            if let Some(entry) = unsafe { self.entry(i) }
+                && entry.present()
+            {
                 f(format_args!(
                     "{}: 0x{:X} -> 0x{:X}",
                     i,
@@ -133,7 +141,9 @@ impl<A: Arch> PageTable<A> {
 
     pub fn debug_entries_with_address_and_flags(&self, f: impl Fn(fmt::Arguments<'_>)) {
         for i in 0..A::PAGE_ENTRIES {
-            if let Some(entry) = unsafe { self.entry(i) } && entry.present() {
+            if let Some(entry) = unsafe { self.entry(i) }
+                && entry.present()
+            {
                 f(format_args!(
                     "{}: 0x{:X} -> 0x{:X} \n flags: {:?}",
                     i,

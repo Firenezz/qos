@@ -1,12 +1,11 @@
 //! qos-kernel image (Limine by default).
 //!
-//! Boot path: `boot_main` → `early_start` → `limine::handoff` → `kernel_main`
+//! Boot path: `boot_main` → `limine::handoff` → `kernel::kernel_main`
 
 #![no_std]
 #![no_main]
 #![feature(custom_test_frameworks)]
 #![test_runner(::qos_kernel::test_runner)]
-
 
 #[cfg(feature = "boot-limine")]
 mod limine_image {

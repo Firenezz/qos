@@ -14,8 +14,14 @@ fn sstatus_sie_sum_roundtrip() {
     s.set_sum(true);
     assert!(s.sie());
     assert!(s.sum());
-    assert_eq!(s.bits() & sstatus::Flags::SIE.bits(), sstatus::Flags::SIE.bits());
-    assert_eq!(s.bits() & sstatus::Flags::SUM.bits(), sstatus::Flags::SUM.bits());
+    assert_eq!(
+        s.bits() & sstatus::Flags::SIE.bits(),
+        sstatus::Flags::SIE.bits()
+    );
+    assert_eq!(
+        s.bits() & sstatus::Flags::SUM.bits(),
+        sstatus::Flags::SUM.bits()
+    );
 }
 
 #[test]

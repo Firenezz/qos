@@ -1,7 +1,7 @@
-//! Trap context visible to Rust under `riscv-interrupt-s`.
+//! Trap CSR snapshot visible to Rust.
 //!
-//! General-purpose registers are saved/restored by the interrupt ABI prologue
-//! and are not exposed here. Only CSRs the dispatcher may inspect or adjust.
+//! GPRs are saved/restored by the naked entry (`push_registers!` /
+//! `pop_registers!`) and are not exposed here.
 
 use riscv_rs::csr::{scause, sepc, sstatus, stval};
 

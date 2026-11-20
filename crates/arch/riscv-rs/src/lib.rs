@@ -10,6 +10,6 @@
 //! requires `target_arch = "riscv64"`.
 
 pub mod csr;
-pub mod operations;
 pub mod ecall;
 pub mod interrupt;
+pub mod operations;

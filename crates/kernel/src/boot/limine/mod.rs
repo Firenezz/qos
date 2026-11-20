@@ -1,22 +1,42 @@
 //! Limine protocol adapter: requests + handoff → [`crate::boot::BootInfo`].
 
+use core::mem::MaybeUninit;
 use core::num::NonZeroU64;
 
-use limine::{mp::MpInfo, request::{
-    DtbResponse, EfiResponse, ExecutableAddressResponse, FramebufferResponse, MemmapResponse,
-    MpResponse, RsdpResponse, HhdmRepsonse,
-}};
+use limine::{
+    mp::MpInfo,
+    request::{
+        DtbResponse, EfiResponse, ExecutableAddressResponse, ExecutableCmdlineResponse,
+        FramebufferResponse, HhdmRepsonse, MemmapResponse, MpResponse, RsdpResponse,
+    },
+};
 
-use crate::boot::{Architecture, BootInfo, BootLoader, Capability};
+use crate::boot::{
+    Architecture, BootInfo, BootLoader, BootMemorySnapshot, Capability, CpuInfo,
+};
+#[cfg(target_arch = "riscv64")]
+use crate::boot::{Capability::Absent, info::KernelAddressInfo};
+
+use self::memmap::LimineMemoryKind;
 
 mod entry;
+mod memmap;
 
 pub use entry::ENTRY_POINT_REQUEST;
 
 static mut CPU_MAP: Option<&[&MpInfo]> = None;
 
-use limine_request::*;
+/// Boot-time `CpuInfo` snapshot (`CpuMap` needs a long borrow; heap is not ready yet).
+///
+/// Lives in `.bss.reclaim` → linker `.boot_reclaim` (NOLOAD). Free
+/// `[__boot_reclaim_start, __boot_reclaim_end)` only after [`BootInfo`] is
+/// consumed and nothing still points at this array.
+const MAX_BOOT_CPUS: usize = 256;
+#[unsafe(link_section = ".bss.reclaim")]
+static mut BOOT_CPU_INFO: [MaybeUninit<CpuInfo>; MAX_BOOT_CPUS] =
+    [const { MaybeUninit::uninit() }; MAX_BOOT_CPUS];
 
+use limine_request::*;
 
 pub(crate) mod limine_request {
     use limine::request::*;
@@ -29,6 +49,10 @@ pub(crate) mod limine_request {
 
     #[unsafe(link_section = ".requests")]
     pub(crate) static SMP_REQUEST: MpRequest = MpRequest::new(0);
+
+    #[unsafe(link_section = ".requests")]
+    pub(crate) static EXECUTABLE_CMDLINE_REQUEST: ExecutableCmdlineRequest =
+        ExecutableCmdlineRequest::new();
 
     #[unsafe(link_section = ".requests")]
     pub(crate) static KERNEL_ADDRESS_REQUEST: ExecutableAddressRequest =
@@ -59,12 +83,27 @@ pub struct LimineBootInfo {
     pub framebuffer_response: Option<&'static FramebufferResponse>,
     pub efi_system_table_response: Option<&'static EfiResponse>,
     pub hhdm_response: Option<&'static HhdmRepsonse>,
+    pub executable_cmdline_response: Option<&'static ExecutableCmdlineResponse>,
+}
+
+#[inline(always)]
+fn cast_pointer<T: alloc::fmt::Debug>(pointer: u64) -> Option<&'static T> {
+    let test = NonZeroU64::new(pointer).map(|pointer| unsafe { &*(pointer.get() as *const T) });
+    log::debug!("Cast pointer: {:#x} -> {:?}", pointer, test);
+    test
 }
 
 impl TryFrom<LimineBootInfo> for BootInfo {
     type Error = ();
 
     fn try_from(limine_boot_info: LimineBootInfo) -> Result<BootInfo, Self::Error> {
+        let memory = if limine_boot_info.memmap_response.is_some() {
+            log::trace!("Copying memory map from Limine into BootInfo");
+            BootMemorySnapshot::from_boot_map(&limine_boot_info)
+        } else {
+            BootMemorySnapshot::empty()
+        };
+
         #[cfg(target_arch = "riscv64")]
         return Ok(Self {
             architecture: Architecture::RiscV64,
@@ -74,6 +113,30 @@ impl TryFrom<LimineBootInfo> for BootInfo {
                 .bsp_hartid as u64,
             efi_system_table: map_efi_system_table(&limine_boot_info),
             hhdm_offset: limine_boot_info.hhdm_response.map(|hhdm| hhdm.offset),
+            memory,
+            cmd_line: limine_boot_info
+                .executable_cmdline_response
+                .map_or(Capability::Absent, |cmd_line| {
+                    Capability::Present(cmd_line.cmdline())
+                }),
+            rsdp: limine_boot_info
+                .rsdp_response
+                .map_or(Capability::Absent, |rsdp| {
+                    cast_pointer(rsdp.address as u64)
+                        .map_or(Capability::Absent, |rsdp| Capability::Present(rsdp))
+                }),
+            kernel_address: limine_boot_info.kernel_address_response.map_or(
+                None,
+                |kernel_address| {
+                    Some(KernelAddressInfo {
+                        physical_base: cast_pointer(kernel_address.physical_base as u64)
+                            .map_or(None, |kernel_address| Some(kernel_address)),
+                        virtual_base: cast_pointer(kernel_address.virtual_base as u64)
+                            .map_or(None, |kernel_address| Some(kernel_address)),
+                    })
+                },
+            ),
+            cpus: limine_boot_info.smp_response.map_or(Absent, map_smp_cpus),
             ..Default::default()
         });
         #[cfg(target_arch = "x86_64")]
@@ -85,6 +148,29 @@ impl TryFrom<LimineBootInfo> for BootInfo {
                 .bsp_lapic_id as u64,
             efi_system_table: map_efi_system_table(&limine_boot_info),
             hhdm_offset: limine_boot_info.hhdm_response.map(|hhdm| hhdm.offset),
+            memory,
+            cmd_line: limine_boot_info
+                .executable_cmdline_response
+                .map_or(Capability::Absent, |cmd_line| {
+                    Capability::Present(cmd_line.cmdline())
+                }),
+            rsdp: limine_boot_info
+                .rsdp_response
+                .map_or(Capability::Absent, |rsdp| {
+                    cast_pointer(rsdp.address as u64)
+                        .map_or(Capability::Absent, |rsdp| Capability::Present(rsdp))
+                }),
+            kernel_address: limine_boot_info.kernel_address_response.map_or(
+                None,
+                |kernel_address| {
+                    Some(KernelAddressInfo {
+                        physical_base: cast_pointer(kernel_address.physical_base as u64)
+                            .map_or(None, |kernel_address| Some(kernel_address)),
+                        virtual_base: cast_pointer(kernel_address.virtual_base as u64)
+                            .map_or(None, |kernel_address| Some(kernel_address)),
+                    })
+                },
+            ),
             ..Default::default()
         });
         #[cfg(not(any(
@@ -99,10 +185,44 @@ impl TryFrom<LimineBootInfo> for BootInfo {
 
 #[inline(always)]
 fn map_efi_system_table(limine_boot_info: &LimineBootInfo) -> Capability<*const ()> {
-    limine_boot_info.efi_system_table_response.map_or(
-        Capability::Absent,
-        |efi| Capability::Present(efi.address),
-    )
+    limine_boot_info
+        .efi_system_table_response
+        .map_or(Capability::Absent, |efi| {
+            cast_pointer(efi.address as u64)
+                .map_or(Capability::Absent, |efi| Capability::Present(efi))
+        })
+}
+
+#[cfg(target_arch = "riscv64")]
+fn map_smp_cpus(smp: &'static MpResponse) -> Capability<crate::boot::CpuMap> {
+    use crate::boot::CpuMap;
+
+    let bsp_hartid = smp.bsp_hartid;
+    let limine_cpus = smp.cpus();
+    let n = limine_cpus.len().min(MAX_BOOT_CPUS);
+    if limine_cpus.len() > MAX_BOOT_CPUS {
+        log::warn!(
+            "Limine reported {} CPUs; only first {MAX_BOOT_CPUS} kept in BootInfo",
+            limine_cpus.len()
+        );
+    }
+
+    // SAFETY: handoff is single-threaded on the BSP; we `write` `n` elements
+    // before forming the slice (valid until `.boot_reclaim` is freed).
+    unsafe {
+        let slots = core::ptr::addr_of_mut!(BOOT_CPU_INFO);
+        for (i, cpu) in limine_cpus.iter().take(n).enumerate() {
+            (*slots)[i].write(CpuInfo::new(
+                cpu.processor_id as u32,
+                cpu.hartid as u64,
+                Capability::Absent,
+                cpu.hartid == bsp_hartid,
+            ));
+        }
+        Capability::Present(CpuMap {
+            cpus: core::slice::from_raw_parts(slots.cast::<CpuInfo>(), n),
+        })
+    }
 }
 
 fn gather_limine_boot_info() -> LimineBootInfo {
@@ -115,24 +235,12 @@ fn gather_limine_boot_info() -> LimineBootInfo {
         framebuffer_response: FRAMEBUFFER_REQUEST.response().take(),
         efi_system_table_response: EFI_SYSTEM_TABLE_REQUEST.response().take(),
         hhdm_response: HHDM_REQUEST.response().take(),
+        executable_cmdline_response: EXECUTABLE_CMDLINE_REQUEST.response().take(),
     }
 }
 
 fn memmap_entry_kind(type_: u64) -> &'static str {
-    use limine::memmap;
-
-    match type_ {
-        memmap::MEMMAP_USABLE => "usable",
-        memmap::MEMMAP_RESERVED => "reserved",
-        memmap::MEMMAP_ACPI_RECLAIMABLE => "acpi-reclaimable",
-        memmap::MEMMAP_ACPI_NVS => "acpi-nvs",
-        memmap::MEMMAP_BAD_MEMORY => "bad-memory",
-        memmap::MEMMAP_BOOTLOADER_RECLAIMABLE => "bootloader-reclaimable",
-        memmap::MEMMAP_EXECUTABLE_AND_MODULES => "executable-and-modules",
-        memmap::MEMMAP_FRAMEBUFFER => "framebuffer",
-        memmap::MEMMAP_MAPPED_RESERVED => "reserved-mapped",
-        _ => "unknown",
-    }
+    LimineMemoryKind(type_).debug_name()
 }
 
 /// Log the Limine memory map for bring-up / debugging.
@@ -169,16 +277,20 @@ fn debug_bootloader_memmap(limine_info: &LimineBootInfo) {
     }
 }
 
-/// Collect Limine responses and enter [`crate::boot::kernel_main`].
+/// Collect Limine responses and enter [`crate::kernel::kernel_main`].
 pub fn handoff() -> ! {
-    let actual_revision = BASE_REVISION.actual_revision().expect("Base revision not supported");
+    let actual_revision = BASE_REVISION
+        .actual_revision()
+        .expect("Base revision not supported");
     if !BASE_REVISION.is_supported() || actual_revision < 4 {
         crate::halt();
     }
 
     let limine_info = gather_limine_boot_info();
 
-    let hhdm_offset = limine_info.hhdm_response.map_or(None, |hhdm| NonZeroU64::new(hhdm.offset));
+    let hhdm_offset = limine_info
+        .hhdm_response
+        .map_or(None, |hhdm| NonZeroU64::new(hhdm.offset));
 
     // call pre-bootloader initialization for early logging and other setup
     crate::kernel::pre_bootloader_init(hhdm_offset);

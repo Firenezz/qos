@@ -1,10 +1,47 @@
 //! Match on `scause` and handle or halt.
 
-use super::cause::{Exception, Interrupt};
-use super::frame::TrapFrame;
-use riscv_rs::csr::scause;
+use crate::arch::riscv::interrupt::exception::InterruptContext;
 
-pub(super) fn handle(frame: &mut TrapFrame) {
+use super::cause::{Exception, Interrupt};
+
+pub(super) fn handle(context: &mut InterruptContext) {
+    let cause = riscv_rs::csr::scause::read();
+    let is_interrupt = cause.interrupt();
+    if !is_interrupt {
+        match Exception::from_code(cause.code()) {
+            Some(Exception::InstructionPageFault)
+            | Some(Exception::LoadPageFault)
+            | Some(Exception::StorePageFault) => {
+                log::error!("Page fault: {:016X}", context.regs.ra);
+                log::error!("Page fault stval: {:#016X}", riscv_rs::csr::stval::read().bits());
+                unhandled(context, "page fault");
+            }
+            Some(Exception::UserEnvCall) | Some(Exception::SupervisorEnvCall) => {
+                unhandled(context, "environment call");
+            }
+            Some(Exception::Breakpoint) => {
+                unhandled(context, "breakpoint");
+            }
+            Some(_) | None => unhandled(context, "exception"),
+        }
+        
+    } else {
+        match Interrupt::from_code(cause.code()) {
+            Some(Interrupt::SupervisorSoftware) => {
+                unhandled(context, "supervisor software interrupt");
+            }
+            Some(Interrupt::SupervisorTimer) => {
+                unhandled(context, "supervisor timer interrupt");
+            }
+            Some(Interrupt::SupervisorExternal) => {
+                unhandled(context, "supervisor external interrupt");
+            }
+            None => unhandled(context, "unknown interrupt"),
+        }
+    }
+}
+
+/*pub(super) fn handle(frame: &mut TrapFrame) {
     let cause = scause::Local::from_bits(frame.scause);
     let code = cause.code();
 
@@ -43,10 +80,10 @@ pub(super) fn handle(frame: &mut TrapFrame) {
         }
         Some(_) | None => unhandled(frame, "exception"),
     }
-}
+}*/
 
-fn unhandled(frame: &TrapFrame, kind: &str) {
-    let _ = (frame, kind);
-    // Park the hart; CSR fields in `frame` remain for debuggers.
+fn unhandled(context: &mut InterruptContext, kind: &str) {
+    context.dump();
+    log::error!("Unhandled interrupt: {}", kind);
     crate::halt();
 }

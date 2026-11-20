@@ -1,0 +1,9 @@
+{
+    "recommendations": [
+        "mkhl.direnv",
+        "rust-lang.rust-analyzer",
+        "vadimcn.vscode-lldb",
+        "fill-labs.dependi",
+        "pinage404.nix-extension-pack"
+    ]
+}

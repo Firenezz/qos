@@ -4,7 +4,7 @@ use core::num::NonZeroU64;
 
 use log::{Level, log};
 
-use crate::arch::device::uart::{SbiLogger};
+use crate::arch::device::uart::SbiLogger;
 use crate::arch::{Arch, Memory, Processor};
 use crate::console::Console;
 
@@ -21,7 +21,6 @@ pub struct Riscv64;
 pub struct Hart;
 
 impl Processor for Hart {
-
     #[inline(always)]
     fn wait_for_interrupt() {
         riscv_rs::operations::wfi();
@@ -60,6 +59,7 @@ impl Arch for Riscv64 {
         // SAFETY: BSP bring-up; stack valid; IRQs still masked after this.
 
         Self::init_memory(_info);
+        Self::init_allocator();
 
         unsafe {
             interrupt::init();
@@ -88,5 +88,12 @@ impl Arch for Riscv64 {
     #[inline(always)]
     fn irq_is_enabled() -> bool {
         interrupt::is_enabled()
+    }
+
+    /// Register devices with the platform.
+    ///
+    /// This should probe and register boot-time devices like timers
+    fn register_devices() {
+        device::register_devices();
     }
 }

@@ -1,31 +1,42 @@
-use alloc::vec::Vec;
-use smallvec::SmallVec;
+use spin::Mutex;
 
+use crate::boot::memory::{BootMemoryMap, BootMemoryRegion, ReclaimStage};
+use crate::definitions::PhysicalAddress;
+use crate::kernel::memory::{MAX_SNAPSHOT_REGIONS, MemoryMap, MemoryRegion};
 
-#[derive(Clone, Copy, Debug)]
-enum BootloaderMemoryKind {
-    Usable,
-    Reserved,
-    AcpiReclaimable,
-    AcpiNVS,
-    BadMemory,
+static MEMORY: Mutex<MemoryMap> = Mutex::new(MemoryMap::empty());
+
+/// Build the global [`MemoryMap`] from any bootloader map (no heap).
+pub fn init_from_boot<M: BootMemoryMap>(boot: &M) {
+    let mut snapshot = [MemoryRegion::EMPTY; MAX_SNAPSHOT_REGIONS];
+    let count = boot.region_count().min(MAX_SNAPSHOT_REGIONS);
+
+    for i in 0..count {
+        let Some(region) = boot.region(i) else {
+            break;
+        };
+        snapshot[i] = region.to_memory_region();
+    }
+
+    *MEMORY.lock() = MemoryMap::from_snapshot(snapshot, count);
 }
 
-pub trait ExternalMemoryEntry {
-    fn start(&self) -> usize;
-    fn end(&self) -> usize;
-    fn kind(&self) -> BootloaderMemoryKind;
+pub fn with_memory<R>(f: impl FnOnce(&MemoryMap) -> R) -> R {
+    let guard = MEMORY.lock();
+    f(&guard)
 }
 
-#[derive(Clone, Copy, Debug)]
-struct MemoryEntry {
-    pub start: usize,
-    pub end: usize,
-    pub kind: BootloaderMemoryKind,
+pub fn with_memory_mut<R>(f: impl FnOnce(&mut MemoryMap) -> R) -> R {
+    let mut guard = MEMORY.lock();
+    f(&mut *guard)
 }
 
-struct MemoryMap {
-    boot_map: [MemoryEntry; 128],
-    runtime_map: SmallVec<[MemoryEntry; 32]>,
-    size: usize,
+/// Register a physical MMIO range (e.g. from ACPI or a driver).
+pub fn register_device_memory(base: PhysicalAddress, length: usize) -> bool {
+    with_memory_mut(|map| map.register_device(base, length))
+}
+
+/// Advance the allocatable pool through `stage` (e.g. after ACPI parse).
+pub fn promote_through(stage: ReclaimStage) {
+    with_memory_mut(|map| map.promote_through(stage));
 }
