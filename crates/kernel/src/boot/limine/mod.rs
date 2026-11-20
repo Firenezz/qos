@@ -12,7 +12,7 @@ use limine::{
 };
 
 use crate::boot::{
-    Architecture, BootInfo, BootLoader, BootMemorySnapshot, Capability, CpuInfo,
+    Architecture, BootInfo, BootLoader, BootMemorySnapshot, Capability, CpuInfo, FramebufferInfo,
 };
 #[cfg(target_arch = "riscv64")]
 use crate::boot::{Capability::Absent, info::KernelAddressInfo};
@@ -137,6 +137,7 @@ impl TryFrom<LimineBootInfo> for BootInfo {
                 },
             ),
             cpus: limine_boot_info.smp_response.map_or(Absent, map_smp_cpus),
+            framebuffer: map_framebuffer(&limine_boot_info),
             ..Default::default()
         });
         #[cfg(target_arch = "x86_64")]
@@ -171,6 +172,7 @@ impl TryFrom<LimineBootInfo> for BootInfo {
                     })
                 },
             ),
+            framebuffer: map_framebuffer(&limine_boot_info),
             ..Default::default()
         });
         #[cfg(not(any(
@@ -191,6 +193,25 @@ fn map_efi_system_table(limine_boot_info: &LimineBootInfo) -> Capability<*const 
             cast_pointer(efi.address as u64)
                 .map_or(Capability::Absent, |efi| Capability::Present(efi))
         })
+}
+
+fn map_framebuffer(limine_boot_info: &LimineBootInfo) -> Capability<FramebufferInfo> {
+    let Some(response) = limine_boot_info.framebuffer_response else {
+        return Capability::Absent;
+    };
+    let Some(fb) = response.framebuffers().first() else {
+        return Capability::Absent;
+    };
+    Capability::Present(FramebufferInfo {
+        addr: fb.address() as u64,
+        width: fb.width,
+        height: fb.height,
+        pitch: fb.pitch,
+        bpp: fb.bpp,
+        red_mask_shift: fb.red_mask_shift,
+        green_mask_shift: fb.green_mask_shift,
+        blue_mask_shift: fb.blue_mask_shift,
+    })
 }
 
 #[cfg(target_arch = "riscv64")]

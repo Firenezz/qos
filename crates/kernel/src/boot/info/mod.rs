@@ -146,11 +146,17 @@ impl Into<crate::kernel::cpu::ProcessorInfo> for CpuInfo {
     }
 }
 
+/// Bootloader-provided framebuffer (Limine maps `addr` as a virtual, writable pixel buffer).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct FramebufferInfo {
+    /// Virtual address of the first pixel.
     pub addr: u64,
     pub width: u64,
     pub height: u64,
+    /// Bytes per scanline (may include padding beyond `width * bpp/8`).
     pub pitch: u64,
     pub bpp: u16,
+    pub red_mask_shift: u8,
+    pub green_mask_shift: u8,
+    pub blue_mask_shift: u8,
 }

@@ -8,7 +8,8 @@ use riscv_rs::csr::satp;
 use spin::Mutex;
 
 use crate::arch::{Arch, Current, traits::Memory};
-use crate::boot::BootInfo;
+use crate::boot::{BootInfo, Capability};
+use crate::kernel::framebuffer;
 use crate::kernel::os::Os;
 use crate::platform;
 
@@ -35,6 +36,22 @@ pub fn kernel_main(info: BootInfo) -> ! {
 
     log::debug!("Boot info: {:#?}", info);
     Current::init(&info);
+
+    // Test
+    if let Capability::Present(fb) = info.framebuffer {
+        log::info!(
+            "Framebuffer: {}x{} stride={} bpp={} @ {:#x}",
+            fb.width,
+            fb.height,
+            fb.pitch,
+            fb.bpp,
+            fb.addr
+        );
+        // SAFETY: Limine maps the FB as writable WC for the life of boot reclaim.
+        unsafe { framebuffer::clear(&fb, 0x20, 0x60, 0xc0) };
+    } else {
+        log::warn!("No framebuffer from bootloader");
+    }
 
     // Platform bring-up is staged: firmware capture → arch service probe → publish.
     let mut platform_init = platform::Init::new();

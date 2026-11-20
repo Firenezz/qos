@@ -5,6 +5,7 @@
 pub mod alloc;
 pub mod cpu;
 pub mod entry;
+pub mod framebuffer;
 pub mod memory;
 pub mod os;
 
