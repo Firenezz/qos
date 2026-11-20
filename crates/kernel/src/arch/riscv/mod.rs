@@ -59,6 +59,7 @@ impl Arch for Riscv64 {
         // SAFETY: BSP bring-up; stack valid; IRQs still masked after this.
 
         Self::init_memory(_info);
+        Self::init_allocator();
 
         unsafe {
             interrupt::init();

@@ -10,6 +10,8 @@ in
 {
   languages.rust = {
     enable = true;
+    # Targets/components come from rust-toolchain.toml; devenv rejects
+    # toolchainFile combined with a manual `targets` list.
     toolchainFile = ./rust-toolchain.toml;
     components = [
       "rustc"
@@ -20,7 +22,6 @@ in
       "llvm-tools"
       "rust-analyzer"
     ];
-    targets = [ "riscv64gc-unknown-none-elf" ];
   };
 
   packages = with pkgs; [

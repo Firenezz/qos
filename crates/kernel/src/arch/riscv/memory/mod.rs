@@ -1,4 +1,3 @@
-
 use qmm::{TableKind, arch::Arch, page::structures::table::PageTable};
 
 use crate::definitions::{PhysicalAddress, PhysicalAddressRange, VirtualAddress};
@@ -15,7 +14,9 @@ static mut HHDM_OFFSET: u64 = 0;
 
 impl Memory for Riscv64 {
     fn init_allocator() {
-        todo!("Not implemented")
+        // SAFETY: BSP-only, after `init_memory` installed the qmm HHDM offset.
+        // The allocatable pool is usable RAM from the boot map, excluding the kernel image.
+        startup::with_memory(|map| unsafe { crate::kernel::memory::frame::init(map) });
     }
 
     fn init_memory(info: &crate::boot::BootInfo) {
