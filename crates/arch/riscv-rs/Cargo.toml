@@ -1,0 +1,31 @@
+[package]
+name = "riscv-rs"
+version = "0.1.0"
+edition = "2024"
+description = "RISC-V architecture support (CSRs, RV64gc)"
+autotests = false
+
+[lib]
+# Bare-metal targets have no `test` crate; keep the lib harness off so
+# rust-analyzer / `cargo check --target riscv64gc-unknown-none-elf` stay clean.
+# Host field-packing tests: `cargo test -p riscv-rs --features std`
+test = false
+doctest = false
+bench = false
+
+[dependencies]
+bitflags = "2.4.0"
+paste = "1.0"
+
+[features]
+default = []
+# Empty gate for host-only integration tests (does not link `std`).
+std = []
+
+[[test]]
+name = "field_packing"
+path = "tests/field_packing.rs"
+required-features = ["std"]
+
+[package.metadata.docs.rs]
+targets = ["riscv64gc-unknown-none-elf"]

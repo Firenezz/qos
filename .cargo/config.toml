@@ -1,0 +1,7 @@
+[unstable]
+json-target-spec = true
+
+[target.riscv64gc-unknown-none-elf]
+linker = "rust-lld"
+# Kernel builds pass -Zbuild-std via just/make; keep it off globally so
+# host `cargo test -p qos-types` can link against std.

@@ -1,40 +1,45 @@
 {
+    "version": "2.0.0",
     "tasks": [
         {
-            "label": "launch gdb-server",
+            "label": "just: build",
             "type": "shell",
-            "command": "make -f GNUMakefile run-gdb-server",
-            "isBackground": true,
+            "command": "just build",
             "group": {
                 "kind": "build",
                 "isDefault": true
             },
-            "problemMatcher": [
-                {
-                    "owner": "rust",
-                    "fileLocation": ["relative", "${workspaceFolder}"],
-                    "pattern": {
-                        "regexp": "^(.*):(\\d+):(\\d+):\\s+(warning|error):\\s+(.*)$",
-                        "file": 1,
-                        "line": 2,
-                        "column": 3,
-                        "severity": 4,
-                        "message": 5
-                    }
+            "problemMatcher": ["$rustc"]
+        },
+        {
+            "label": "just: iso-build",
+            "type": "shell",
+            "command": "just iso-build",
+            "group": "build",
+            "problemMatcher": ["$rustc"]
+        },
+        {
+            "label": "launch gdb-server",
+            "type": "shell",
+            "command": "just run-riscv64-gdb",
+            "isBackground": true,
+            "group": "none",
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated",
+                "focus": false
+            },
+            "problemMatcher": {
+                "owner": "qemu-gdb",
+                "pattern": {
+                    "regexp": "^$"
                 },
-                {
-                    "owner": "make",
-                    "fileLocation": ["relative", "${workspaceFolder}"],
-                    "pattern": {
-                        "regexp": "^(.*):(\\d+):(\\d+):\\s+(warning|error):\\s+(.*)$",
-                        "file": 1,
-                        "line": 2,
-                        "column": 3,
-                        "severity": 4,
-                        "message": 5
-                    }
+                "background": {
+                    "activeOnStart": true,
+                    "beginsPattern": ".",
+                    "endsPattern": "GDB server listening on localhost:3333"
                 }
-            ]
+            }
         }
     ]
 }

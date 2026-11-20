@@ -1,0 +1,29 @@
+//! Boot protocols → [`BootInfo`] → [`kernel_main`].
+//!
+//! Sequence (all bootloaders):
+//! 1. `boot_main` (arch) — set GP
+//! 2. [`early_start`] — pick protocol adapter
+//! 3. `protocol::handoff` — build [`BootInfo`]
+//! 4. [`kernel_main`] — shared kernel
+
+pub mod capabilities;
+pub mod info;
+
+#[cfg(feature = "boot-limine")]
+pub mod limine;
+
+pub use capabilities::Capability;
+pub use info::{
+    Architecture, BootInfo, CpuInfo, CpuMap, FramebufferInfo
+};
+
+pub trait BootLoader {
+    fn handoff(&self) -> !;
+
+    /// Bootstrap the CPU.
+    /// 
+    /// This function request the bootloader specific context to start the processor with a thread pointer as extra argument.
+    /// 
+    /// the bootloader must then send the processor back to the kernel at 
+    fn bootstrap(&self) -> Result<(), &'static str>;
+}
